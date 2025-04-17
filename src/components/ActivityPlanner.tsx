@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Beer, Coffee, Mountain, Mushroom, Wine, Music, Beach, Castle, Camera } from 'lucide-react';
+import { Beer, Coffee, Mountain, Leaf, Wine, Music, Umbrella, Building, Camera } from 'lucide-react';
 import TravelMap from './TravelMap';
 import LandmarkDetail from './LandmarkDetail';
 
@@ -11,10 +11,10 @@ const activities = [
   { id: 'alcohol', name: 'Wine & Beer', icon: <Beer className="h-6 w-6" /> },
   { id: 'coffee', name: 'Coffee Culture', icon: <Coffee className="h-6 w-6" /> },
   { id: 'hiking', name: 'Hiking', icon: <Mountain className="h-6 w-6" /> },
-  { id: 'mushrooms', name: 'Mushroom Foraging', icon: <Mushroom className="h-6 w-6" /> },
+  { id: 'mushrooms', name: 'Mushroom Foraging', icon: <Leaf className="h-6 w-6" /> },
   { id: 'music', name: 'Live Music', icon: <Music className="h-6 w-6" /> },
-  { id: 'beaches', name: 'Beaches', icon: <Beach className="h-6 w-6" /> },
-  { id: 'castles', name: 'Castles & History', icon: <Castle className="h-6 w-6" /> },
+  { id: 'beaches', name: 'Beaches', icon: <Umbrella className="h-6 w-6" /> },
+  { id: 'castles', name: 'Castles & History', icon: <Building className="h-6 w-6" /> },
   { id: 'photography', name: 'Photography', icon: <Camera className="h-6 w-6" /> },
 ];
 
