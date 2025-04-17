@@ -9,7 +9,7 @@ import DestinationResults from './DestinationResults';
 const personalityQuestions = [
   {
     id: 'pace',
-    question: 'What's your preferred travel pace?',
+    question: "What's your preferred travel pace?",
     options: [
       { value: 'relaxed', label: 'Relaxed and laid-back' },
       { value: 'balanced', label: 'Balanced mix of activities and downtime' },
