@@ -1,10 +1,12 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import DestinationResults from './DestinationResults';
+
+interface PersonalityRecommenderProps {
+  onComplete: (answers: Record<string, string>) => void;
+}
 
 const personalityQuestions = [
   {
@@ -38,10 +40,9 @@ const personalityQuestions = [
   },
 ];
 
-const PersonalityRecommender = () => {
+const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [showResults, setShowResults] = useState(false);
 
   const handleAnswer = (questionId: string, value: string) => {
     setAnswers({
@@ -54,7 +55,7 @@ const PersonalityRecommender = () => {
     if (currentQuestion < personalityQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      setShowResults(true);
+      onComplete(answers);
     }
   };
 
@@ -63,16 +64,6 @@ const PersonalityRecommender = () => {
       setCurrentQuestion(currentQuestion - 1);
     }
   };
-
-  const handleReset = () => {
-    setAnswers({});
-    setCurrentQuestion(0);
-    setShowResults(false);
-  };
-
-  if (showResults) {
-    return <DestinationResults personalityAnswers={answers} onReset={handleReset} />;
-  }
 
   const question = personalityQuestions[currentQuestion];
   const questionAnswered = answers[question.id] !== undefined;

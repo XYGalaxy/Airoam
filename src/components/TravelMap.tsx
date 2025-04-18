@@ -2,9 +2,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Globe, Locate } from 'lucide-react';
 
-// This is a placeholder for the actual map implementation
-// In a real app, we would use a library like Mapbox, Google Maps, or Leaflet
-const TravelMap = ({ 
+interface TravelMapProps {
+  destinations?: string[];
+  landmarks?: Array<{
+    id: number;
+    name: string;
+    location: [number, number];
+  }>;
+  onSelectLandmark?: (landmark: any) => void;
+  selectedLandmark?: any;
+}
+
+const TravelMap: React.FC<TravelMapProps> = ({ 
   destinations = [], 
   landmarks = [],
   onSelectLandmark = () => {},
