@@ -18,26 +18,35 @@ const Index = () => {
     setActiveTab("personality");
   };
 
+  // Show different tabs based on quiz completion
+  const renderTabs = () => {
+    if (!personalityAnswers) {
+      return (
+        <TabsList className="grid w-full grid-cols-1 mb-8">
+          <TabsTrigger value="home">Start Your Journey</TabsTrigger>
+        </TabsList>
+      );
+    }
+
+    return (
+      <TabsList className="grid w-full grid-cols-2 mb-8">
+        <TabsTrigger value="personality">Personality Based</TabsTrigger>
+        <TabsTrigger value="activity">Activity Based</TabsTrigger>
+      </TabsList>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1">
         <Tabs 
-          defaultValue="home" 
-          className="container py-8"
           value={activeTab}
           onValueChange={setActiveTab}
+          className="container py-8"
         >
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="home">Home</TabsTrigger>
-            <TabsTrigger value="personality" disabled={!personalityAnswers}>
-              Personality Based
-            </TabsTrigger>
-            <TabsTrigger value="activity" disabled={!personalityAnswers}>
-              Activity Based
-            </TabsTrigger>
-          </TabsList>
+          {renderTabs()}
           
           <TabsContent value="home" className="animate-fade-in">
             <div className="mx-auto max-w-6xl text-center space-y-8">
