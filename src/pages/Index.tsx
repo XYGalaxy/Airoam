@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Header from "@/components/Header";
 import PersonalityRecommender from "@/components/PersonalityRecommender";
 import ActivityPlanner from "@/components/ActivityPlanner";
+import DestinationResults from "@/components/DestinationResults";
 import { CompassIcon, UserIcon } from "lucide-react";
 
 const Index = () => {
