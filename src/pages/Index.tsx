@@ -30,30 +30,30 @@ const Index = () => {
           {!personalityAnswers ? (
             <div className="mx-auto max-w-6xl text-center space-y-8">
               <WavyBackground className="max-w-4xl mx-auto">
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-sky-800 bg-clip-text text-transparent mb-6">
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-600 to-sky-800 bg-clip-text text-transparent mb-6 [font-family:'Virgil',system-ui] animate-float">
                   Begin Your Travel Journey
                 </h1>
-                <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+                <p className="text-xl text-slate-600 max-w-3xl mx-auto [font-family:'Virgil',system-ui] squiggly-underline">
                   Take our personality quiz to discover your perfect European destinations and unlock personalized travel recommendations.
                 </p>
               </WavyBackground>
               
-              <div className="mt-12">
+              <div className="mt-12 animate-float">
                 <PersonalityRecommender onComplete={handlePersonalityComplete} />
               </div>
             </div>
           ) : (
             <>
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-sky-50 rounded-full p-1">
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-sky-50/50 rounded-full p-1 border-2 border-dashed border-sky-200">
                 <TabsTrigger 
                   value="personality"
-                  className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sky-700"
+                  className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sky-700 [font-family:'Virgil',system-ui]"
                 >
                   Personality Based
                 </TabsTrigger>
                 <TabsTrigger 
                   value="activity"
-                  className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sky-700"
+                  className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sky-700 [font-family:'Virgil',system-ui]"
                 >
                   Activity Based
                 </TabsTrigger>
