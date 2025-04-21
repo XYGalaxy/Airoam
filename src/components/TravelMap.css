@@ -1,0 +1,28 @@
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.landmark-marker {
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #10b981;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.landmark-marker.selected {
+  width: 16px !important;
+  height: 16px !important;
+  background-color: #f97316;
+  z-index: 1000;
+}
+
+.landmark-marker:hover {
+  width: 16px !important;
+  height: 16px !important;
+  background-color: #f97316;
+} 
