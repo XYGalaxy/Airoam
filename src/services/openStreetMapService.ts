@@ -32,12 +32,12 @@ export const searchPlaces = async (params: OpenStreetMapSearchParams): Promise<O
     const cacheKey = `osm-${params.q}-${params.countrycodes || 'all'}`;
     
     // Check cache first
-    const cachedData = cacheService.get(cacheKey);
+    const cachedData = await cacheService.get(cacheKey);
     if (cachedData) {
-      return cachedData;
+      return cachedData as OpenStreetMapPlace[];
     }
 
-    const response = await axios.get(NOMINATIM_BASE_URL, {
+    const response = await axios.get<OpenStreetMapPlace[]>(NOMINATIM_BASE_URL, {
       params: {
         ...params,
         format: 'json',
@@ -58,7 +58,7 @@ export const searchPlaces = async (params: OpenStreetMapSearchParams): Promise<O
     const data = response.data;
     
     // Cache the results
-    cacheService.set(cacheKey, data);
+    await cacheService.set(cacheKey, data);
     
     return data;
   } catch (error) {

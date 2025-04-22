@@ -1,146 +1,431 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Beer, Coffee, Mountain, Leaf, Wine, Music, Umbrella, Building, Camera } from 'lucide-react';
 import TravelMap from './TravelMap';
 import LandmarkDetail from './LandmarkDetail';
-import { searchPlaces as searchGooglePlaces, convertToLandmark as convertGoogleLandmark } from '@/services/placesService';
+import { searchPlaces, getPlaceDetails, Landmark } from '../services/placesService';
 import { searchPlaces as searchOSMPlaces, convertToLandmark as convertOSMLandmark } from '@/services/openStreetMapService';
-import { getPlaceDetails } from '@/services/placesService';
+import { getPlaceType, getKeyword } from '@/services/placesService';
+import { EuropeanCountry } from '../types/Country';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { LatLng } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+type ActivityType = 'nature' | 'culture' | 'food' | 'shopping' | 'nightlife';
+
+interface Activity {
+  type: ActivityType;
+  name: string;
+  icon: string;
+  description: string;
+}
 
 const activities = [
-  { id: 'alcohol', name: 'Wine & Beer', icon: <Beer className="h-6 w-6" /> },
-  { id: 'coffee', name: 'Coffee Culture', icon: <Coffee className="h-6 w-6" /> },
-  { id: 'hiking', name: 'Hiking', icon: <Mountain className="h-6 w-6" /> },
-  { id: 'mushrooms', name: 'Mushroom Foraging', icon: <Leaf className="h-6 w-6" /> },
-  { id: 'music', name: 'Live Music', icon: <Music className="h-6 w-6" /> },
-  { id: 'beaches', name: 'Beaches', icon: <Umbrella className="h-6 w-6" /> },
-  { id: 'castles', name: 'Castles & History', icon: <Building className="h-6 w-6" /> },
-  { id: 'photography', name: 'Photography', icon: <Camera className="h-6 w-6" /> },
+  { id: 'hiking', name: 'Hiking' },
+  { id: 'museum', name: 'Museum' },
+  { id: 'wine', name: 'Wine' },
+  { id: 'coffee', name: 'Coffee' },
+  { id: 'mushroom', name: 'Mushroom' },
+  { id: 'more', name: 'More' }
 ];
 
 // Mock data for landmarks based on activities
-const landmarksByActivity: Record<string, any[]> = {
-  alcohol: [
-    { id: 1, name: 'Champagne Region', country: 'France', location: [4.023, 49.044], type: 'Wine Region', price: '€€', daysNeeded: 2, rating: 4.8 },
-    { id: 2, name: 'Pilsner Urquell Brewery', country: 'Czech Republic', location: [13.383, 49.748], type: 'Brewery', price: '€', daysNeeded: 1, rating: 4.6 },
-    { id: 3, name: 'Port Wine Cellars', country: 'Portugal', location: [-8.614, 41.138], type: 'Wine Cellar', price: '€', daysNeeded: 1, rating: 4.7 },
-    { id: 18, name: 'Tuscany Wine Region', country: 'Italy', location: [11.257, 43.771], type: 'Wine Region', price: '€€', daysNeeded: 3, rating: 4.9 },
-    { id: 19, name: 'Belgian Beer Route', country: 'Belgium', location: [4.352, 50.847], type: 'Beer Route', price: '€€', daysNeeded: 2, rating: 4.7 },
-  ],
-  coffee: [
-    { id: 4, name: 'Café Central', country: 'Austria', location: [16.366, 48.210], type: 'Historic Café', price: '€€', daysNeeded: 0.5, rating: 4.5 },
-    { id: 5, name: 'Café A Brasileira', country: 'Portugal', location: [-9.142, 38.714], type: 'Historic Café', price: '€', daysNeeded: 0.5, rating: 4.3 },
-    { id: 20, name: 'Café de Flore', country: 'France', location: [2.333, 48.854], type: 'Historic Café', price: '€€', daysNeeded: 0.5, rating: 4.6 },
-    { id: 21, name: 'Caffè Florian', country: 'Italy', location: [12.338, 45.434], type: 'Historic Café', price: '€€€', daysNeeded: 0.5, rating: 4.8 },
-  ],
+const landmarksByActivity: Record<string, Landmark[]> = {
   hiking: [
-    { id: 6, name: 'Cinque Terre', country: 'Italy', location: [9.724, 44.128], type: 'Coastal Trail', price: '€€', daysNeeded: 3, rating: 4.9 },
-    { id: 7, name: 'Tour du Mont Blanc', country: 'France/Italy/Switzerland', location: [6.864, 45.917], type: 'Mountain Trail', price: '€€€', daysNeeded: 7, rating: 4.9 },
-    { id: 22, name: 'Plitvice Lakes', country: 'Croatia', location: [15.582, 44.865], type: 'National Park', price: '€€', daysNeeded: 2, rating: 4.8 },
-    { id: 23, name: 'Dolomites', country: 'Italy', location: [11.850, 46.500], type: 'Mountain Range', price: '€€€', daysNeeded: 5, rating: 4.9 },
-  ],
-  mushrooms: [
-    { id: 8, name: 'Black Forest', country: 'Germany', location: [8.214, 48.268], type: 'Forest', price: '€', daysNeeded: 2, rating: 4.4 },
-    { id: 9, name: 'Białowieża Forest', country: 'Poland', location: [23.837, 52.757], type: 'Ancient Forest', price: '€', daysNeeded: 2, rating: 4.6 },
-    { id: 24, name: 'Bavarian Forest', country: 'Germany', location: [13.200, 48.900], type: 'National Park', price: '€', daysNeeded: 2, rating: 4.5 },
-  ],
-  music: [
-    { id: 10, name: 'La Scala', country: 'Italy', location: [9.189, 45.467], type: 'Opera House', price: '€€€', daysNeeded: 1, rating: 4.8 },
-    { id: 11, name: 'Roskilde Festival', country: 'Denmark', location: [12.080, 55.620], type: 'Music Festival', price: '€€€', daysNeeded: 4, rating: 4.7 },
-    { id: 25, name: 'Sziget Festival', country: 'Hungary', location: [19.050, 47.550], type: 'Music Festival', price: '€€', daysNeeded: 5, rating: 4.8 },
-    { id: 26, name: 'Vienna State Opera', country: 'Austria', location: [16.367, 48.203], type: 'Opera House', price: '€€€', daysNeeded: 1, rating: 4.9 },
-  ],
-  beaches: [
-    { id: 12, name: 'Navagio Beach', country: 'Greece', location: [20.624, 37.859], type: 'Beach', price: '€€', daysNeeded: 1, rating: 4.9 },
-    { id: 13, name: 'Playa de Ses Illetes', country: 'Spain', location: [1.427, 38.731], type: 'Beach', price: '€€', daysNeeded: 1, rating: 4.8 },
-    { id: 27, name: 'Zlatni Rat', country: 'Croatia', location: [16.650, 43.267], type: 'Beach', price: '€€', daysNeeded: 1, rating: 4.7 },
-    { id: 28, name: 'Praia da Marinha', country: 'Portugal', location: [-8.412, 37.088], type: 'Beach', price: '€', daysNeeded: 1, rating: 4.9 },
+    {
+      id: '1',
+      name: 'Cinque Terre',
+      description: 'A string of centuries-old seaside villages on the rugged Italian Riviera coastline.',
+      location: { latitude: 44.128, longitude: 9.724 },
+      type: 'Coastal Trail',
+      rating: 4.9,
+      priceLevel: 2,
+      estimatedDays: 3,
+      country: 'Italy',
+      source: 'mock'
+    },
+    {
+      id: '2',
+      name: 'Tour du Mont Blanc',
+      description: 'A 170 km trek through France, Italy and Switzerland, circumnavigating Mont Blanc.',
+      location: { latitude: 45.917, longitude: 6.864 },
+      type: 'Mountain Trail',
+      rating: 4.9,
+      priceLevel: 3,
+      estimatedDays: 7,
+      country: 'France/Italy/Switzerland',
+      source: 'mock'
+    }
   ],
   castles: [
-    { id: 14, name: 'Neuschwanstein Castle', country: 'Germany', location: [10.750, 47.557], type: 'Castle', price: '€€', daysNeeded: 1, rating: 4.9 },
-    { id: 15, name: 'Edinburgh Castle', country: 'Scotland', location: [-3.200, 55.949], type: 'Castle', price: '€€', daysNeeded: 1, rating: 4.7 },
-    { id: 29, name: 'Prague Castle', country: 'Czech Republic', location: [14.400, 50.092], type: 'Castle', price: '€€', daysNeeded: 1, rating: 4.8 },
-    { id: 30, name: 'Château de Chambord', country: 'France', location: [1.517, 47.616], type: 'Castle', price: '€€', daysNeeded: 1, rating: 4.7 },
-  ],
-  photography: [
-    { id: 16, name: 'Santorini', country: 'Greece', location: [25.396, 36.416], type: 'Island', price: '€€€', daysNeeded: 3, rating: 4.9 },
-    { id: 17, name: 'Plitvice Lakes', country: 'Croatia', location: [15.582, 44.865], type: 'National Park', price: '€€', daysNeeded: 1, rating: 4.8 },
-    { id: 31, name: 'Hallstatt', country: 'Austria', location: [13.650, 47.562], type: 'Village', price: '€€', daysNeeded: 1, rating: 4.9 },
-    { id: 32, name: 'Cinque Terre', country: 'Italy', location: [9.724, 44.128], type: 'Coastal Villages', price: '€€', daysNeeded: 2, rating: 4.9 },
-  ],
-};
-
-// 定义每个活动对应的推荐国家
-const recommendedCountriesByActivity: Record<string, Array<{
-  name: string;
-  description: string;
-  coordinates: [number, number];
-  imageUrl: string;
-}>> = {
-  alcohol: [
     {
-      name: 'France',
-      description: '世界著名的葡萄酒产区，从波尔多到勃艮第，每个地区都有其独特的葡萄酒文化。',
-      coordinates: [2.3522, 48.8566],
-      imageUrl: 'https://images.unsplash.com/photo-1502741224143-90386d401f93',
+      id: '3',
+      name: 'Neuschwanstein Castle',
+      description: 'A 19th-century Romanesque Revival palace on a rugged hill above the village of Hohenschwangau.',
+      location: { latitude: 47.557, longitude: 10.750 },
+      type: 'Castle',
+      rating: 4.9,
+      priceLevel: 2,
+      estimatedDays: 1,
+      country: 'Germany',
+      source: 'mock'
     },
     {
-      name: 'Italy',
-      description: '托斯卡纳的葡萄酒和威尼托的普罗塞克，意大利的葡萄酒文化源远流长。',
-      coordinates: [12.4964, 41.9028],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
-    },
-    {
-      name: 'Germany',
-      description: '啤酒之都慕尼黑和莱茵河谷的葡萄酒，德国是啤酒和葡萄酒爱好者的天堂。',
-      coordinates: [13.4050, 52.5200],
-      imageUrl: 'https://images.unsplash.com/photo-1506197603052-3cc9d3a201bd',
-    },
+      id: '4',
+      name: 'Edinburgh Castle',
+      description: 'A historic fortress which dominates the skyline of Edinburgh, the capital of Scotland.',
+      location: { latitude: 55.949, longitude: -3.200 },
+      type: 'Castle',
+      rating: 4.7,
+      priceLevel: 2,
+      estimatedDays: 1,
+      country: 'Scotland',
+      source: 'mock'
+    }
   ],
   coffee: [
     {
-      name: 'Italy',
-      description: '意式浓缩咖啡的发源地，从威尼斯到罗马，每个城市都有其独特的咖啡文化。',
-      coordinates: [12.4964, 41.9028],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
+      id: '5',
+      name: 'Café Central',
+      description: 'A traditional Viennese coffeehouse in the Innere Stadt district of Vienna.',
+      location: { latitude: 48.210, longitude: 16.366 },
+      type: 'Historic Café',
+      rating: 4.5,
+      priceLevel: 2,
+      estimatedDays: 0.5,
+      country: 'Austria',
+      source: 'mock'
     },
     {
-      name: 'Austria',
-      description: '维也纳咖啡馆文化，优雅的咖啡厅和精致的甜点，体验皇室般的享受。',
-      coordinates: [16.3738, 48.2082],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
-    },
-    {
-      name: 'Portugal',
-      description: '里斯本的咖啡文化，独特的葡式咖啡和蛋挞，体验地道的葡萄牙风情。',
-      coordinates: [-9.1393, 38.7223],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
-    },
+      id: '6',
+      name: 'Café A Brasileira',
+      description: 'A famous coffeehouse in Lisbon, Portugal, known for its historic significance and artistic heritage.',
+      location: { latitude: 38.714, longitude: -9.142 },
+      type: 'Historic Café',
+      rating: 4.3,
+      priceLevel: 1,
+      estimatedDays: 0.5,
+      country: 'Portugal',
+      source: 'mock'
+    }
   ],
+  alcohol: [
+    {
+      id: '7',
+      name: 'Champagne Region',
+      description: 'The world-famous wine region in northeastern France, home to the sparkling wine Champagne.',
+      location: { latitude: 49.044, longitude: 4.023 },
+      type: 'Wine Region',
+      rating: 4.8,
+      priceLevel: 2,
+      estimatedDays: 2,
+      country: 'France',
+      source: 'mock'
+    },
+    {
+      id: '8',
+      name: 'Pilsner Urquell Brewery',
+      description: 'The birthplace of Pilsner beer, located in Pilsen, Czech Republic.',
+      location: { latitude: 49.748, longitude: 13.383 },
+      type: 'Brewery',
+      rating: 4.6,
+      priceLevel: 1,
+      estimatedDays: 1,
+      country: 'Czech Republic',
+      source: 'mock'
+    }
+  ],
+  photography: [
+    {
+      id: '9',
+      name: 'Santorini',
+      description: 'A stunning Greek island in the Aegean Sea, known for its white-washed buildings and blue domes.',
+      location: { latitude: 36.416, longitude: 25.396 },
+      type: 'Island',
+      rating: 4.9,
+      priceLevel: 3,
+      estimatedDays: 3,
+      country: 'Greece',
+      source: 'mock'
+    },
+    {
+      id: '10',
+      name: 'Plitvice Lakes',
+      description: 'A national park in Croatia known for its chain of 16 terraced lakes, joined by waterfalls.',
+      location: { latitude: 44.865, longitude: 15.582 },
+      type: 'National Park',
+      rating: 4.8,
+      priceLevel: 2,
+      estimatedDays: 1,
+      country: 'Croatia',
+      source: 'mock'
+    }
+  ]
+};
+
+// 定义每个活动对应的兴趣选项和推荐国家
+const interestsByActivity: Record<string, Array<{
+  name: string;
+  countries: Array<{
+    name: string;
+    description: string;
+    coordinates: [number, number];
+    imageUrl: string;
+  }>;
+}>> = {
   hiking: [
     {
-      name: 'Switzerland',
-      description: '阿尔卑斯山脉的壮丽景色，从少女峰到马特洪峰，徒步者的天堂。',
-      coordinates: [8.2275, 46.8182],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
+      name: 'Mountain Trails',
+      countries: [
+        {
+          name: 'Switzerland',
+          description: '阿尔卑斯山脉的壮丽景色，从少女峰到马特洪峰，徒步者的天堂。',
+          coordinates: [8.2275, 46.8182],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Norway',
+          description: '峡湾和极光，挪威的自然景观令人叹为观止，是徒步旅行的绝佳选择。',
+          coordinates: [10.7522, 59.9139],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
     },
     {
-      name: 'Norway',
-      description: '峡湾和极光，挪威的自然景观令人叹为观止，是徒步旅行的绝佳选择。',
-      coordinates: [10.7522, 59.9139],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
-    },
-    {
-      name: 'Scotland',
-      description: '高地徒步，从尼斯湖到本尼维斯山，体验苏格兰的野性之美。',
-      coordinates: [-4.2518, 55.8642],
-      imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963',
-    },
+      name: 'Coastal Walks',
+      countries: [
+        {
+          name: 'Portugal',
+          description: '阿尔加维海岸线，风景如画的海岸徒步路线。',
+          coordinates: [-8.2245, 39.3999],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Croatia',
+          description: '亚得里亚海沿岸的美丽徒步路线。',
+          coordinates: [15.2, 45.1],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    }
   ],
-  // ... 其他活动的推荐国家
+  museum: [
+    {
+      name: 'Art Museums',
+      countries: [
+        {
+          name: 'Italy',
+          description: '乌菲兹美术馆和梵蒂冈博物馆，文艺复兴艺术的殿堂。',
+          coordinates: [12.4964, 41.9028],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'France',
+          description: '卢浮宫和奥赛博物馆，世界级艺术收藏。',
+          coordinates: [2.3522, 48.8566],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    },
+    {
+      name: 'History Museums',
+      countries: [
+        {
+          name: 'Greece',
+          description: '雅典国家考古博物馆，古希腊文明的见证。',
+          coordinates: [23.7275, 37.9838],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'UK',
+          description: '大英博物馆，世界历史文化的宝库。',
+          coordinates: [-0.1276, 51.5074],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    }
+  ],
+  coffee: [
+    {
+      name: 'Historic Cafés',
+      countries: [
+        {
+          name: 'Italy',
+          description: '威尼斯和罗马的百年咖啡馆，意式咖啡文化的发源地。',
+          coordinates: [12.4964, 41.9028],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Greece',
+          description: '雅典的传统咖啡馆，体验希腊独特的咖啡文化。',
+          coordinates: [23.7275, 37.9838],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    },
+    {
+      name: 'Barista Workshops',
+      countries: [
+        {
+          name: 'Netherlands',
+          description: '阿姆斯特丹的精品咖啡文化，专业的咖啡师培训。',
+          coordinates: [4.8952, 52.3702],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Denmark',
+          description: '哥本哈根的咖啡文化，北欧风格的咖啡体验。',
+          coordinates: [12.5683, 55.6761],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    }
+  ],
+  wine: [
+    {
+      name: 'Wine Tasting',
+      countries: [
+        {
+          name: 'France',
+          description: '波尔多和勃艮第的葡萄酒品鉴，世界顶级葡萄酒产区。',
+          coordinates: [2.3522, 48.8566],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Italy',
+          description: '托斯卡纳的葡萄酒品鉴，体验意大利葡萄酒文化。',
+          coordinates: [12.4964, 41.9028],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    },
+    {
+      name: 'Vineyard Tours',
+      countries: [
+        {
+          name: 'Spain',
+          description: '里奥哈和普里奥拉特的葡萄园之旅。',
+          coordinates: [-3.7038, 40.4168],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Portugal',
+          description: '杜罗河谷的葡萄园，波特酒的故乡。',
+          coordinates: [-8.2245, 39.3999],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    }
+  ],
+  mushroom: [
+    {
+      name: 'Foraging Tours',
+      countries: [
+        {
+          name: 'Sweden',
+          description: '瑞典森林的蘑菇采摘体验，北欧独特的蘑菇文化。',
+          coordinates: [18.0686, 59.3293],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Finland',
+          description: '芬兰森林的蘑菇采摘，体验北欧自然文化。',
+          coordinates: [24.9384, 60.1699],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    },
+    {
+      name: 'Mushroom Markets',
+      countries: [
+        {
+          name: 'France',
+          description: '普罗旺斯的松露市场，法国蘑菇文化的代表。',
+          coordinates: [2.3522, 48.8566],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Italy',
+          description: '托斯卡纳的蘑菇市场，意大利美食文化的一部分。',
+          coordinates: [12.4964, 41.9028],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    }
+  ],
+  more: [
+    {
+      name: 'Local Markets',
+      countries: [
+        {
+          name: 'Spain',
+          description: '巴塞罗那的波盖利亚市场，体验西班牙美食文化。',
+          coordinates: [-3.7038, 40.4168],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Greece',
+          description: '雅典的中央市场，体验希腊传统市场文化。',
+          coordinates: [23.7275, 37.9838],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    },
+    {
+      name: 'Street Food',
+      countries: [
+        {
+          name: 'Turkey',
+          description: '伊斯坦布尔的街头美食，体验土耳其美食文化。',
+          coordinates: [28.9784, 41.0082],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        },
+        {
+          name: 'Germany',
+          description: '柏林的街头美食，体验德国美食文化。',
+          coordinates: [13.4050, 52.5200],
+          imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
+        }
+      ]
+    }
+  ]
 };
+
+// 添加欧洲国家列表
+const europeanCountries: EuropeanCountry[] = [
+  {
+    id: 'france',
+    name: 'France',
+    capital: 'Paris',
+    description: 'Known for its rich culture, iconic landmarks like the Eiffel Tower, world-class cuisine, and beautiful countryside.',
+    imageUrl: '/images/france.jpg',
+    location: { latitude: 46.2276, longitude: 2.2137 },
+    recommendedDays: 7,
+    popularActivities: ['Visit the Eiffel Tower', 'Explore the Louvre', 'Wine tasting in Bordeaux']
+  },
+  {
+    id: 'italy',
+    name: 'Italy',
+    capital: 'Rome',
+    description: 'Home to ancient ruins, artistic treasures, famous cuisine, and stunning landscapes.',
+    imageUrl: '/images/italy.jpg',
+    location: { latitude: 41.8719, longitude: 12.5674 },
+    recommendedDays: 10,
+    popularActivities: ['Visit the Colosseum', 'Explore Venice canals', 'Tour Tuscan vineyards']
+  },
+  {
+    id: 'spain',
+    name: 'Spain',
+    capital: 'Madrid',
+    description: 'Famous for its vibrant culture, flamenco dancing, tapas cuisine, and historic architecture.',
+    imageUrl: 'https://source.unsplash.com/featured/?madrid,spain',
+    location: { latitude: 40.4168, longitude: -3.7038 },
+    recommendedDays: 10,
+    popularActivities: ['Visit Sagrada Familia', 'Tour the Prado Museum', 'Experience flamenco']
+  }
+];
 
 interface GooglePlace {
   place_id: string;
@@ -161,17 +446,9 @@ interface GooglePlace {
   types?: string[];
 }
 
-interface Landmark {
-  id: number;
-  name: string;
-  location: [number, number];
-  description?: string;
-  imageUrl?: string;
-  rating?: number;
-  priceLevel?: number;
-  type?: string;
-  estimatedDays?: number;
-  source?: string;
+interface Location {
+  latitude: number;
+  longitude: number;
 }
 
 interface Country {
@@ -182,171 +459,300 @@ interface Country {
 }
 
 interface PlaceDetails {
-  // Define the structure of the PlaceDetails type
+  place_id: string;
+  name: string;
+  vicinity?: string;
+  formatted_address?: string;
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+  photos?: Array<{
+    photo_reference: string;
+  }>;
+  rating?: number;
+  price_level?: number;
+  types?: string[];
+  user_ratings_total?: number;
+  opening_hours?: {
+    open_now?: boolean;
+  };
 }
 
-const ActivityPlanner = () => {
-  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const [selectedLandmark, setSelectedLandmark] = useState<Landmark | null>(null);
-  const [landmarks, setLandmarks] = useState<Landmark[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [interests, setInterests] = useState<string[]>([]);
+interface ActivityPlannerProps {
+  landmarks: Landmark[];
+  onLandmarkSelect: (landmark: Landmark) => void;
+  selectedLandmark: Landmark | null;
+  activities: string[];
+  selectedActivity: string | null;
+  onActivitySelect: (activity: string) => void;
+}
 
-  const handleActivitySelect = (activityId: string) => {
-    setSelectedActivity(activityId);
-    setSelectedCountries([]);
-    setLandmarks([]);
+interface ActivityPlannerState {
+  selectedCountry: EuropeanCountry | null;
+  selectedActivity: Activity | null;
+  landmarks: Landmark[];
+  selectedLandmark: Landmark | null;
+  loading: boolean;
+  showCountrySelector: boolean;
+  interests: string[];
+}
+
+interface TravelMapProps {
+  landmarks: Array<{
+    id: number;
+    name: string;
+    location: [number, number];
+  }>;
+  onSelectLandmark: (landmark: any) => void;
+  selectedLandmark: any;
+}
+
+const mockLandmarksByActivity = {
+  nature: [
+    {
+      id: '11',
+      name: 'Mont Blanc',
+      description: 'The highest mountain in the Alps and Western Europe.',
+      location: { latitude: 45.8326, longitude: 6.8652 },
+      type: 'Mountain',
+      rating: 4.9,
+      priceLevel: 2,
+      estimatedDays: 2,
+      country: 'France/Italy',
+      source: 'mock'
+    },
+    {
+      id: '12',
+      name: 'Plitvice Lakes',
+      description: 'A stunning series of cascading lakes in Croatia.',
+      location: { latitude: 44.8654, longitude: 15.5820 },
+      type: 'National Park',
+      rating: 4.8,
+      priceLevel: 2,
+      estimatedDays: 1,
+      country: 'Croatia',
+      source: 'mock'
+    },
+    {
+      id: '13',
+      name: 'Norwegian Fjords',
+      description: 'Dramatic landscape of deep glacial valleys and steep mountains.',
+      location: { latitude: 60.4720, longitude: 7.3236 },
+      type: 'Natural Wonder',
+      rating: 4.9,
+      priceLevel: 3,
+      estimatedDays: 3,
+      country: 'Norway',
+      source: 'mock'
+    }
+  ],
+  nightlife: [
+    {
+      id: 1,
+      name: 'Berghain',
+      country: 'Germany',
+      location: [52.5109, 13.4426],
+      type: 'nightclub',
+      price: 3,
+      daysNeeded: 1,
+      rating: 4.8
+    },
+    {
+      id: 2,
+      name: 'Fabric',
+      country: 'UK',
+      location: [51.5208, -0.1056],
+      type: 'nightclub',
+      price: 3,
+      daysNeeded: 1,
+      rating: 4.7
+    },
+    {
+      id: 3,
+      name: 'Amnesia',
+      country: 'Spain',
+      location: [39.0000, 1.4167],
+      type: 'nightclub',
+      price: 3,
+      daysNeeded: 1,
+      rating: 4.6
+    }
+  ],
+  // ... other activity mock data ...
+};
+
+const ActivityPlanner: React.FC = () => {
+  const [state, setState] = useState<ActivityPlannerState>({
+    selectedCountry: null,
+    selectedActivity: null,
+    landmarks: [],
+    selectedLandmark: null,
+    loading: false,
+    showCountrySelector: false,
+    interests: []
+  });
+
+  // 缓存已加载的地标数据
+  const landmarkCache = useRef<Record<string, Landmark[]>>({});
+
+  const getActivityCategory = (activityType: ActivityType): string => {
+    switch (activityType) {
+      case 'nature':
+        return 'hiking';
+      case 'culture':
+        return 'castles';
+      case 'food':
+        return 'coffee';
+      case 'nightlife':
+        return 'alcohol';
+      case 'shopping':
+        return 'photography';
+      default:
+        return activityType;
+    }
   };
 
-  const handleCountrySelect = async (countryName: string) => {
-    setSelectedCountries(prev => {
-      const isSelected = prev.includes(countryName);
-      if (isSelected) {
-        return prev.filter(c => c !== countryName);
-      } else {
-        return [...prev, countryName];
-      }
-    });
+  const getInterestsByActivity = (activityId: string) => {
+    return interestsByActivity[activityId] || [];
+  };
+
+  const handleActivitySelect = async (activity: { id: string; name: string }) => {
+    console.log('Selected activity:', activity);
     
+    setState(prev => ({
+      ...prev,
+      selectedActivity: activity,
+      selectedCountry: null,
+      landmarks: [],
+      showCountrySelector: false,
+      interests: []
+    }));
+  };
+
+  const handleCountrySelect = async (country: EuropeanCountry) => {
+    console.log('Selected country:', country);
+    
+    if (!state.selectedActivity) {
+      console.error('No activity selected');
+      return;
+    }
+
+    const category = getActivityCategory(state.selectedActivity.type);
+    const location = `${country.location.latitude},${country.location.longitude}`;
+    const radius = 50000; // 50km radius
+
     try {
-      const country = recommendedCountriesByActivity[selectedActivity!].find(c => c.name === countryName);
-      if (country) {
-        setLoading(true);
-        const params = {
-          location: `${country.coordinates[1]},${country.coordinates[0]}`,
-          radius: 100000,
-          type: getPlaceType(selectedActivity!),
-          keyword: getKeyword(selectedActivity!),
-        };
-        
-        const places = await searchGooglePlaces(params) as unknown as GooglePlace[];
-        const convertedLandmarks: Landmark[] = places.map(place => ({
-          id: parseInt(place.place_id),
-          name: place.name,
-          location: place.geometry?.location ? 
-            [place.geometry.location.lng, place.geometry.location.lat] as [number, number] : 
-            [0, 0] as [number, number],
-          description: place.vicinity || place.formatted_address || '',
-          imageUrl: place.photos?.[0]?.photo_reference ? 
-            `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}` : 
-            undefined,
-          rating: place.rating,
-          priceLevel: place.price_level,
-          type: place.types?.[0],
-          estimatedDays: 1
+      const type = getPlaceType(category);
+      const keyword = getKeyword(category);
+      
+      console.log('Searching places with params:', {
+        location,
+        radius,
+        type,
+        keyword
+      });
+
+      const response = await searchPlaces({
+        location,
+        radius,
+        type,
+        keyword
+      });
+
+      console.log('Places API response:', response);
+
+      if (response) {
+        const mappedLandmarks: Landmark[] = response.map(landmark => ({
+          id: landmark.id,
+          name: landmark.name,
+          location: landmark.location,
+          description: landmark.description,
+          imageUrl: landmark.imageUrl,
+          rating: landmark.rating,
+          priceLevel: landmark.priceLevel,
+          type: category,
+          estimatedDays: 1,
+          country: country.name,
+          source: 'google'
         }));
-        setLandmarks(prev => [...prev, ...convertedLandmarks]);
+
+        setState(prev => ({
+          ...prev,
+          selectedCountry: country,
+          landmarks: mappedLandmarks,
+          showCountrySelector: false
+        }));
       }
     } catch (error) {
-      console.error('Error fetching landmarks:', error);
-      setError('Failed to fetch landmarks. Please try again later.');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching places:', error);
     }
   };
 
-  const getPlaceType = (activityId: string): string => {
-    switch (activityId) {
-      case 'alcohol':
-        return 'bar';
-      case 'coffee':
-        return 'cafe';
-      case 'hiking':
-        return 'park';
-      case 'mushrooms':
-        return 'park';
-      case 'music':
-        return 'establishment';
-      case 'beaches':
-        return 'natural_feature';
-      case 'castles':
-        return 'point_of_interest';
-      case 'photography':
-        return 'point_of_interest';
-      default:
-        return 'point_of_interest';
-    }
-  };
-
-  const getKeyword = (activityId: string): string => {
-    switch (activityId) {
-      case 'alcohol':
-        return 'wine bar OR winery OR brewery';
-      case 'coffee':
-        return 'cafe OR coffee shop';
-      case 'hiking':
-        return 'hiking trail OR national park';
-      case 'mushrooms':
-        return 'forest OR nature reserve';
-      case 'music':
-        return 'concert hall OR music venue';
-      case 'beaches':
-        return 'beach OR seaside';
-      case 'castles':
-        return 'castle OR palace OR historic building';
-      case 'photography':
-        return 'scenic view OR viewpoint';
-      default:
-        return '';
-    }
-  };
-  
   const handleLandmarkSelect = async (landmark: Landmark) => {
-    setSelectedLandmark(landmark);
-    
+    setState(prev => ({
+      ...prev,
+      selectedLandmark: landmark
+    }));
+
     try {
-      const details = await getPlaceDetails(landmark.id.toString());
+      const details = await getPlaceDetails(landmark.id);
       if (details) {
-        // Update the landmark with additional details if needed
-        console.log('Landmark details:', details);
+        setState(prev => ({
+          ...prev,
+          selectedLandmarkDetails: details
+        }));
       }
     } catch (error) {
       console.error('Error fetching landmark details:', error);
     }
   };
 
-  const buildSearchQuery = (activity: string): string => {
-    const queryMap: Record<string, string> = {
-      'Wine & Beer': 'wine bar OR winery OR brewery',
-      'Beaches': 'beach OR seaside',
-      'Museums': 'museum OR art gallery',
-      'Castles': 'castle OR palace OR historic building',
-      'Parks': 'park OR garden OR nature reserve',
-      'Shopping': 'shopping center OR mall OR market',
-      'Restaurants': 'restaurant OR cafe OR bistro',
-      'Nightlife': 'bar OR nightclub OR pub',
-      'Sports': 'stadium OR arena OR sports center',
-      'Religious': 'church OR cathedral OR temple',
-    };
+  const handleInterestSelect = (interestName: string) => {
+    if (!state.selectedActivity) return;
 
-    return queryMap[activity] || activity;
+    const interest = interestsByActivity[state.selectedActivity.id]?.find(
+      i => i.name === interestName
+    );
+
+    if (!interest) return;
+
+    // 将国家信息转换为地标格式
+    const countryLandmarks = interest.countries.map(country => ({
+      id: `country-${country.name}`,
+      name: country.name,
+      description: country.description,
+      location: {
+        latitude: country.coordinates[1],
+        longitude: country.coordinates[0]
+      },
+      type: 'Country',
+      rating: 4.5,
+      priceLevel: 2,
+      estimatedDays: 3,
+      country: country.name,
+      source: 'recommended',
+      imageUrl: country.imageUrl
+    }));
+
+    setState(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interestName)
+        ? prev.interests.filter(i => i !== interestName)
+        : [...prev.interests, interestName],
+      landmarks: countryLandmarks
+    }));
   };
 
-  const getInterestsByActivity = (activityId: string): string[] => {
-    switch (activityId) {
-      case 'alcohol':
-        return ['Red wine', 'White wine', 'Beer', 'Gin', 'Whiskey', 'Local brews'];
-      case 'coffee':
-        return ['Espresso', 'Cappuccino', 'Local cafes', 'Historic cafes'];
-      case 'hiking':
-        return ['Mountain trails', 'Coastal walks', 'National parks', 'Nature reserves'];
-      case 'mushrooms':
-        return ['Forest walks', 'Guided tours', 'Local experts'];
-      case 'music':
-        return ['Classical', 'Jazz', 'Folk music', 'Music festivals'];
-      case 'beaches':
-        return ['Sandy beaches', 'Hidden coves', 'Beach clubs', 'Water sports'];
-      case 'castles':
-        return ['Medieval castles', 'Royal palaces', 'Fortresses', 'Historic sites'];
-      case 'photography':
-        return ['Scenic views', 'City shots', 'Nature', 'Architecture'];
-      default:
-        return [];
-    }
+  const toggleCountrySelector = () => {
+    setState(prev => ({
+      ...prev,
+      showCountrySelector: !prev.showCountrySelector
+    }));
   };
-
+  
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-screen p-6">
       {/* Left Panel - Activities */}
@@ -363,35 +769,30 @@ const ActivityPlanner = () => {
               {activities.map((activity) => (
                 <Button
                   key={activity.id}
-                  variant={selectedActivity === activity.id ? "default" : "outline"}
-                  className={`flex-col h-24 ${selectedActivity === activity.id ? 'bg-travel-teal hover:bg-travel-teal/90' : ''}`}
-                  onClick={() => handleActivitySelect(activity.id)}
+                  variant={state.selectedActivity?.id === activity.id ? "default" : "outline"}
+                  className={`flex-col h-24 ${state.selectedActivity?.id === activity.id ? 'bg-travel-teal hover:bg-travel-teal/90' : ''}`}
+                  onClick={() => handleActivitySelect(activity)}
                 >
-                  {activity.icon}
                   <span className="mt-2 text-xs">{activity.name}</span>
                 </Button>
               ))}
             </div>
-            
-            {selectedActivity && (
+          
+            {state.selectedActivity && (
               <div className="mt-6">
                 <h3 className="text-sm font-medium mb-2">What specifically interests you?</h3>
                 <div className="flex flex-wrap gap-2">
-                  {getInterestsByActivity(selectedActivity).map(interest => (
+                  {getInterestsByActivity(state.selectedActivity.id).map(interest => (
                     <Button
-                      key={interest}
+                      key={interest.name}
                       variant="outline"
                       size="sm"
                       className={`rounded-full ${
-                        interests.includes(interest) ? 'bg-travel-teal/20' : ''
+                        state.interests.includes(interest.name) ? 'bg-travel-teal/20' : ''
                       }`}
-                      onClick={() => setInterests(prev => 
-                        prev.includes(interest) 
-                          ? prev.filter(i => i !== interest)
-                          : [...prev, interest]
-                      )}
+                      onClick={() => handleInterestSelect(interest.name)}
                     >
-                      {interest}
+                      {interest.name}
                     </Button>
                   ))}
                 </div>
@@ -400,44 +801,63 @@ const ActivityPlanner = () => {
           </div>
         </CardContent>
       </Card>
-
+      
       {/* Center Panel - Map and Countries */}
       <Card className="lg:col-span-6">
         <CardContent className="p-0 h-full">
           <div className="h-full flex flex-col">
             <div className="flex-1">
               <TravelMap 
-                landmarks={landmarks}
-                onSelectLandmark={setSelectedLandmark}
-                selectedLandmark={selectedLandmark}
+                landmarks={state.landmarks.map(landmark => ({
+                  id: parseInt(landmark.id.replace('country-', '')),
+                  name: landmark.name,
+                  location: [landmark.location.longitude, landmark.location.latitude]
+                }))}
+                onSelectLandmark={handleLandmarkSelect}
+                selectedLandmark={state.selectedLandmark}
               />
             </div>
             
-            {selectedActivity && (
+            {state.selectedActivity && (
               <div className="border-t p-4">
-                <h3 className="font-medium mb-3">Selected: {selectedCountries.join(', ')}</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-medium">
+                    {state.selectedCountry ? `Selected: ${state.selectedCountry.name}` : 'Select a country'}
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleCountrySelector}
+                  >
+                    Choose other country
+                  </Button>
+                </div>
                 <ScrollArea className="h-48">
                   <div className="space-y-3">
-                    {recommendedCountriesByActivity[selectedActivity]?.map((country) => (
+                    {(state.showCountrySelector ? europeanCountries : europeanCountries.filter(country => 
+                      interestsByActivity[getActivityCategory(state.selectedActivity.type)]?.some(rec => 
+                        rec.name === country.name
+                      )
+                    )).map((country) => (
                       <div
-                        key={country.name}
+                        key={country.id}
                         className={`p-3 rounded-md cursor-pointer flex items-center justify-between ${
-                          selectedCountries.includes(country.name) ? 'bg-travel-teal/20' : 'hover:bg-muted'
+                          state.selectedCountry?.id === country.id ? 'bg-travel-teal/20' : 'hover:bg-muted'
                         }`}
-                        onClick={() => handleCountrySelect(country.name)}
+                        onClick={() => handleCountrySelect(country)}
                       >
                         <div>
                           <h4 className="font-medium">{country.name}</h4>
                           <p className="text-sm text-muted-foreground mt-1">
                             {country.description}
                           </p>
-                        </div>
+                          </div>
                         <div className="flex items-center justify-center w-6 h-6 border rounded">
-                          {selectedCountries.includes(country.name) && '✓'}
+                          {state.selectedCountry?.id === country.id && '✓'}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
                 </ScrollArea>
               </div>
             )}
@@ -456,13 +876,15 @@ const ActivityPlanner = () => {
         <CardContent>
           <div className="space-y-4">
             <Button variant="outline" className="w-full justify-start">
-              5 days in selected countries
+              5 days in {state.selectedCountry?.name || 'selected country'}
             </Button>
             <Button variant="outline" className="w-full justify-start">
-              {selectedActivity === 'alcohol' ? 'Wine tasting route' : 
-               selectedActivity === 'coffee' ? 'Coffee shop tour' :
-               selectedActivity === 'hiking' ? 'Hiking trail plan' :
-               'Custom itinerary'}
+              {state.selectedActivity?.type === 'food' ? 'Local Food Tour' :
+               state.selectedActivity?.type === 'culture' ? 'Historical Walking Tour' :
+               state.selectedActivity?.type === 'nature' ? 'Nature Trail' :
+               state.selectedActivity?.type === 'shopping' ? 'Shopping Route' :
+               state.selectedActivity?.type === 'nightlife' ? 'Nightlife Tour' :
+               'Custom Route'}
             </Button>
             <Button variant="outline" className="w-full justify-start">
               Local recommendations

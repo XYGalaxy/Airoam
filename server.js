@@ -1,130 +1,139 @@
 import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const port = process.env.PORT || 3000;
+const DEFAULT_PORT = 3000;
 
-// 直接使用API key，不通过环境变量
-const API_KEY = 'AIzaSyCx5Ddmau2zkG9eGKNtyremtkAvPBKVi2I';
-
-console.log('Environment variables:', {
-  PORT: process.env.PORT,
-  API_KEY: API_KEY
-});
-
-// Enable CORS for all routes
+// Enable CORS
 app.use(cors());
 
-app.use(express.json());
+// Serve static files from the dist directory
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Google Places API proxy endpoint
-app.get('/api/places/nearbysearch', async (req, res) => {
+app.get('/api/places/search', async (req, res) => {
   try {
     const { location, radius, type, keyword } = req.query;
-    console.log('Received request with params:', { location, radius, type, keyword });
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
-    const apiUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
-    const params = {
-      location,
-      radius,
-      type,
-      keyword,
-      key: API_KEY
-    };
-
-    console.log('Making request to Google Places API with params:', {
-      ...params,
-      key: 'API_KEY_HIDDEN' // 不在日志中显示完整的API key
-    });
-    
-    const response = await axios.get(apiUrl, { params });
-    console.log('Google Places API response status:', response.data.status);
-    console.log('Google Places API response results count:', response.data.results.length);
-
-    if (response.data.status === 'OK' || response.data.status === 'ZERO_RESULTS') {
-      res.json(response.data);
-    } else {
-      throw new Error(`Google Places API error: ${response.data.status} - ${response.data.error_message || 'No error message'}`);
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Google Places API key not configured' });
     }
-  } catch (error) {
-    console.error('Error proxying Google Places API:', error);
-    if (error.response) {
-      console.error('Error response data:', error.response.data);
-    }
-    res.status(500).json({ 
-      error: 'Failed to fetch places',
-      details: error.message,
-      response: error.response?.data
-    });
-  }
-});
 
-// Place Details proxy endpoint
-app.get('/api/places/details', async (req, res) => {
-  try {
-    const { place_id, fields } = req.query;
-    
-    const response = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+    const response = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
       params: {
-        place_id,
-        fields,
-        key: API_KEY
+        location,
+        radius,
+        type,
+        keyword,
+        key: apiKey
       }
     });
 
-    if (response.data.status === 'OK') {
-      res.json(response.data);
-    } else {
-      throw new Error(`Google Places API error: ${response.data.status}`);
-    }
+    res.json(response.data);
   } catch (error) {
-    console.error('Error proxying Place Details API:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch place details',
-      details: error.message 
-    });
+    console.error('Error fetching places:', error);
+    res.status(500).json({ error: 'Failed to fetch places' });
   }
 });
 
 // Photo proxy endpoint
 app.get('/api/places/photo', async (req, res) => {
   try {
-    const { maxwidth, photo_reference } = req.query;
-    
+    const { photo_reference, maxwidth = 400 } = req.query;
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Google Places API key not configured' });
+    }
+
     const response = await axios.get('https://maps.googleapis.com/maps/api/place/photo', {
       params: {
-        maxwidth,
         photo_reference,
-        key: API_KEY
+        maxwidth,
+        key: apiKey
       },
       responseType: 'arraybuffer'
     });
-    
-    // Set appropriate headers for image response
-    res.set('Content-Type', 'image/jpeg');
+
+    res.set('Content-Type', response.headers['content-type']);
     res.send(response.data);
   } catch (error) {
-    console.error('Error proxying Place Photo API:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch photo',
-      details: error.message 
+    console.error('Error fetching photo:', error);
+    res.status(500).json({ error: 'Failed to fetch photo' });
+  }
+});
+
+// Place details endpoint
+app.get('/api/places/details', async (req, res) => {
+  try {
+    const { place_id } = req.query;
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Google Places API key not configured' });
+    }
+
+    const response = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+      params: {
+        place_id,
+        key: apiKey,
+        fields: 'name,vicinity,formatted_address,geometry,photos,rating,price_level,types,user_ratings_total,opening_hours'
+      }
     });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching place details:', error);
+    res.status(500).json({ error: 'Failed to fetch place details' });
   }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Something broke!',
-    details: err.message 
-  });
+  res.status(500).json({ error: 'Something broke!' });
 });
 
-app.listen(port, () => {
-  console.log(`Proxy server running at http://localhost:${port}`);
+// Catch-all route to serve the frontend application
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// 动态端口分配
+const startServer = (port) => {
+  try {
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+      // 将当前端口保存到环境变量中，供前端使用
+      process.env.VITE_SERVER_PORT = port;
+    });
+  } catch (error) {
+    if (error.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is busy, trying ${port + 1}`);
+      startServer(port + 1);
+    } else {
+      console.error('Error starting server:', error);
+    }
+  }
+};
+
+// 启动服务器
+startServer(DEFAULT_PORT);
+
+// 优雅关闭
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
 }); 

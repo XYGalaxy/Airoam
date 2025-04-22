@@ -2,10 +2,13 @@ import axios from 'axios';
 import { cacheService } from './cacheService';
 
 const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
-const GOOGLE_PLACES_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
-const PROXY_BASE_URL = 'http://localhost:3000/api';
+const SERVER_PORT = import.meta.env.VITE_SERVER_PORT || 3000;
+const PROXY_BASE_URL = `http://localhost:${SERVER_PORT}/api`;
 
 console.log('Frontend API key check:', GOOGLE_PLACES_API_KEY ? 'API key is defined' : 'API key is missing');
+
+// Add ActivityType enum for better type safety
+export type ActivityType = 'historical' | 'nature' | 'entertainment' | 'dining';
 
 interface PlaceSearchParams {
   location: string; // lat,lng
@@ -15,10 +18,25 @@ interface PlaceSearchParams {
 }
 
 interface PlaceSearchResponse {
-  results: any[];
-  next_page_token?: string;
   status: string;
   error_message?: string;
+  results: Array<{
+    place_id: string;
+    name: string;
+    geometry: {
+      location: {
+        lat: number;
+        lng: number;
+      }
+    };
+    vicinity?: string;
+    formatted_address?: string;
+    photos?: Array<{
+      photo_reference: string;
+    }>;
+    rating?: number;
+    price_level?: number;
+  }>;
 }
 
 interface PlaceDetailsResponse {
@@ -49,49 +67,63 @@ interface PlaceDetails {
   };
 }
 
-interface Landmark {
+export interface Location {
+  latitude: number;
+  longitude: number;
+}
+
+export interface Landmark {
   id: string;
   name: string;
-  description: string;
   location: {
     latitude: number;
     longitude: number;
   };
-  imageUrl: string;
-  rating: number;
-  priceLevel: number;
+  description: string;
+  imageUrl: string | null | undefined;
+  rating?: number;
+  priceLevel?: number;
+  type?: string;
+  estimatedDays?: number;
+  country?: string;
+  source?: string;
+}
+
+interface SearchPlacesParams {
+  location: string;
+  radius: number;
   type: string;
-  estimatedDays: number;
-  isOpen?: boolean;
-  totalRatings?: number;
+  keyword: string;
 }
 
 export const searchPlaces = async (params: PlaceSearchParams): Promise<Landmark[]> => {
   try {
-    const cacheKey = `places:${JSON.stringify(params)}`;
-    const cachedData = await cacheService.get(cacheKey);
-    
-    if (cachedData) {
-      return cachedData as Landmark[];
-    }
-
-    const response = await axios.get<PlaceSearchResponse>(`${PROXY_BASE_URL}/places/nearbysearch`, {
-      params: {
-        ...params,
-        key: GOOGLE_PLACES_API_KEY
-      }
+    const response = await axios.get<PlaceSearchResponse>('/api/places/search', {
+      params
     });
 
     if (response.data.status !== 'OK') {
-      throw new Error(response.data.error_message || 'Failed to search places');
+      throw new Error(response.data.error_message || 'Failed to fetch places');
     }
 
-    const results = response.data.results.map(convertToLandmark);
-    
-    // Cache the results
-    await cacheService.set(cacheKey, results);
-    
-    return results;
+    return response.data.results.map((place) => ({
+      id: place.place_id,
+      name: place.name,
+      location: {
+        latitude: place.geometry.location.lat,
+        longitude: place.geometry.location.lng
+      },
+      description: place.vicinity || place.formatted_address || '',
+      imageUrl: place.photos?.[0]?.photo_reference 
+        ? `/api/places/photo?photo_reference=${place.photos[0].photo_reference}` 
+        : null,
+      rating: place.rating || 0,
+      priceLevel: place.price_level || 0,
+      type: params.type,
+      estimatedDays: 1,
+      country: '',
+      source: 'google'
+    }));
   } catch (error) {
     console.error('Error searching places:', error);
     throw error;
@@ -164,7 +196,7 @@ export const convertToLandmark = (place: PlaceDetails): Landmark => {
       longitude: place.geometry?.location?.lng || 0,
     },
     imageUrl: place.photos?.[0]?.photo_reference 
-      ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+      ? `${PROXY_BASE_URL}/places/photo?photo_reference=${place.photos[0].photo_reference}`
       : '',
     rating: place.rating || 0,
     priceLevel: place.price_level || 0,
@@ -174,28 +206,51 @@ export const convertToLandmark = (place: PlaceDetails): Landmark => {
 };
 
 export const getPriceSymbol = (level: number): string => {
-  switch (level) {
-    case 1: return '€';
-    case 2: return '€€';
-    case 3: return '€€€';
-    case 4: return '€€€€';
-    default: return '€';
-  }
+  if (level <= 0) return 'Free';
+  return '€'.repeat(level);
 };
 
 export const estimateDaysNeeded = (type: string): number => {
   switch (type.toLowerCase()) {
     case 'museum':
-    case 'castle':
-    case 'historic site':
+    case 'art_gallery':
       return 0.5;
-    case 'national park':
-    case 'wine region':
-      return 2;
-    case 'city':
-    case 'island':
-      return 3;
-    default:
+    case 'amusement_park':
+    case 'theme_park':
       return 1;
+    case 'national_park':
+      return 2;
+    default:
+      return 0.5;
+  }
+};
+
+export const getPlaceType = (activityId: ActivityType): string => {
+  switch (activityId) {
+    case 'historical':
+      return 'museum';
+    case 'nature':
+      return 'park';
+    case 'entertainment':
+      return 'amusement_park';
+    case 'dining':
+      return 'restaurant';
+    default:
+      return 'point_of_interest';
+  }
+};
+
+export const getKeyword = (activityId: ActivityType): string => {
+  switch (activityId) {
+    case 'historical':
+      return 'historical';
+    case 'nature':
+      return 'nature';
+    case 'entertainment':
+      return 'entertainment';
+    case 'dining':
+      return 'dining';
+    default:
+      return '';
   }
 }; 
