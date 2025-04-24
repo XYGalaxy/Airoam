@@ -1,53 +1,60 @@
-
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '../ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ArrowRight, Instagram } from 'lucide-react';
 import TravelMap from './TravelMap';
+import destinationsData from '../data/destinations.json';
+import { Destination } from '../types/Destination';
 
 interface DestinationResultsProps {
   personalityAnswers: Record<string, string>;
   onReset: () => void;
 }
 
-// Mock data based on personality types
-const getRecommendedDestinations = (answers: Record<string, string>) => {
-  // This would be more sophisticated in a real app
-  const destinations = [
-    {
-      id: 1,
-      name: 'Barcelona, Spain',
-      description: 'A vibrant city with stunning architecture, beaches, and a lively atmosphere.',
-      imageUrl: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?q=80&w=1170&auto=format&fit=crop',
-      match: '94%',
-      highlights: ['Sagrada Familia', 'Park Güell', 'Las Ramblas', 'Beach life']
-    },
-    {
-      id: 2,
-      name: 'Amalfi Coast, Italy',
-      description: 'Breathtaking coastal views, charming villages, and excellent cuisine.',
-      imageUrl: 'https://images.unsplash.com/photo-1533599301075-c01f8ea6fcb4?q=80&w=1170&auto=format&fit=crop',
-      match: '89%',
-      highlights: ['Positano', 'Ravello', 'Coastal hikes', 'Beaches']
-    },
-    {
-      id: 3,
-      name: 'Scottish Highlands',
-      description: 'Rugged mountains, serene lochs, and fascinating history and culture.',
-      imageUrl: 'https://images.unsplash.com/photo-1610296647932-96cd59c540b2?q=80&w=1170&auto=format&fit=crop',
-      match: '85%',
-      highlights: ['Isle of Skye', 'Loch Ness', 'Hiking trails', 'Castles']
-    }
-  ];
+// Get recommended destinations based on personality type
+const getRecommendedDestinations = (answers: Record<string, string>): Destination[] => {
+  // Extract personality traits from answers
+  const personalityTraits = {
+    social: answers.socialPreference === 'alone' ? 'relaxed' : 'adventurous',
+    planning: answers.planningStyle === 'planned' ? 'cultural' : 'adventurous',
+    focus: answers.focusPreference === 'history' ? 'cultural' : 'relaxed'
+  };
   
-  return destinations;
+  // Filter destinations based on personality traits
+  const destinations = destinationsData.destinations as unknown as Destination[];
+  
+  const filteredDestinations = destinations
+    .filter(dest => 
+      dest.personalityTypes.includes(personalityTraits.social) ||
+      dest.personalityTypes.includes(personalityTraits.planning) ||
+      dest.personalityTypes.includes(personalityTraits.focus)
+    )
+    .map(dest => {
+      // Calculate match percentage based on personality traits
+      const matchScores = [
+        dest.matchScore[personalityTraits.social] || 0,
+        dest.matchScore[personalityTraits.planning] || 0,
+        dest.matchScore[personalityTraits.focus] || 0
+      ];
+      
+      const avgMatch = Math.round(matchScores.reduce((sum, score) => sum + score, 0) / matchScores.length);
+      
+      return {
+        ...dest,
+        match: `${avgMatch}%`
+      };
+    })
+    .sort((a, b) => parseInt(b.match || '0') - parseInt(a.match || '0'))
+    .slice(0, 5); // Get top 5 matches
+  
+  return filteredDestinations;
 };
 
 const instagramPosts = [
   {
     id: 1,
-    username: "travel_junkie",
+    username: "european_wanderer",
     location: "Santorini, Greece",
     imageUrl: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?q=80&w=1974&auto=format&fit=crop",
     likes: 2543,
@@ -55,19 +62,19 @@ const instagramPosts = [
   },
   {
     id: 2,
-    username: "wanderlust_diaries",
-    location: "Lake Como, Italy",
-    imageUrl: "https://images.unsplash.com/photo-1574428095061-b4f9e80881a5?q=80&w=1974&auto=format&fit=crop",
+    username: "nordic_explorer",
+    location: "Helsinki, Finland",
+    imageUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1974&auto=format&fit=crop",
     likes: 1872,
-    caption: "Villa vibes on Lake Como 🏡 #lakecomo #italy #villalife"
+    caption: "Design meets nature in Helsinki 🇫🇮 #helsinki #finland #design"
   },
   {
     id: 3,
-    username: "explore_with_emma",
-    location: "Porto, Portugal",
-    imageUrl: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?q=80&w=2070&auto=format&fit=crop",
+    username: "mediterranean_dreams",
+    location: "Amalfi Coast, Italy",
+    imageUrl: "https://images.unsplash.com/photo-1533599301075-c01f8ea6fcb4?q=80&w=1974&auto=format&fit=crop",
     likes: 3241,
-    caption: "Colorful streets of Porto - every corner is a new discovery 🇵🇹 #porto #portugal"
+    caption: "Coastal paradise in Amalfi 🇮🇹 #amalficoast #italy #travel"
   }
 ];
 

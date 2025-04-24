@@ -1,0 +1,199 @@
+{
+  "destinations": [
+    {
+      "id": 1,
+      "name": "Barcelona, Spain",
+      "description": "A vibrant city with stunning architecture, beaches, and a lively atmosphere.",
+      "imageUrl": "https://images.unsplash.com/photo-1583422409516-2895a77efded?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Sagrada Familia", "Park Güell", "Las Ramblas", "Beach life"],
+      "personalityTypes": ["adventurous", "cultural", "relaxed"],
+      "matchScore": {
+        "adventurous": 95,
+        "cultural": 85,
+        "relaxed": 40
+      }
+    },
+    {
+      "id": 2,
+      "name": "Paris, France",
+      "description": "The city of light, art, fashion, and romance.",
+      "imageUrl": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Eiffel Tower", "Louvre Museum", "Cafes", "Fashion"],
+      "personalityTypes": ["cultural", "relaxed"],
+      "matchScore": {
+        "adventurous": 30,
+        "cultural": 95,
+        "relaxed": 85
+      }
+    },
+    {
+      "id": 3,
+      "name": "Swiss Alps",
+      "description": "Majestic mountains, pristine lakes, and world-class hiking trails.",
+      "imageUrl": "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Hiking", "Skiing", "Mountain Trains", "Lakes"],
+      "personalityTypes": ["adventurous", "relaxed"],
+      "matchScore": {
+        "adventurous": 95,
+        "cultural": 35,
+        "relaxed": 85
+      }
+    },
+    {
+      "id": 4,
+      "name": "Santorini, Greece",
+      "description": "Stunning white-washed buildings, blue domes, and breathtaking sunsets.",
+      "imageUrl": "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Oia", "Sunsets", "Wine tasting", "Volcanic beaches"],
+      "personalityTypes": ["relaxed", "cultural"],
+      "matchScore": {
+        "adventurous": 25,
+        "cultural": 75,
+        "relaxed": 95
+      }
+    },
+    {
+      "id": 5,
+      "name": "Amalfi Coast, Italy",
+      "description": "Breathtaking coastal views, charming villages, and excellent cuisine.",
+      "imageUrl": "https://images.unsplash.com/photo-1533599301075-c01f8ea6fcb4?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Coastal Views", "Food", "Villages", "Beaches"],
+      "personalityTypes": ["relaxed", "cultural"],
+      "matchScore": {
+        "adventurous": 35,
+        "cultural": 85,
+        "relaxed": 90
+      }
+    },
+    {
+      "id": 6,
+      "name": "Reykjavik, Iceland",
+      "description": "Northern lights, geothermal pools, and dramatic landscapes.",
+      "imageUrl": "https://images.unsplash.com/photo-1529968030586-3aae35ca1e62?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Northern Lights", "Hot Springs", "Glaciers", "Volcanoes"],
+      "personalityTypes": ["adventurous", "cultural"],
+      "matchScore": {
+        "adventurous": 95,
+        "cultural": 70,
+        "relaxed": 45
+      }
+    },
+    {
+      "id": 7,
+      "name": "Amsterdam, Netherlands",
+      "description": "Canals, cycling culture, and world-class museums.",
+      "imageUrl": "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Canals", "Museums", "Cycling", "Cafes"],
+      "personalityTypes": ["cultural", "relaxed"],
+      "matchScore": {
+        "adventurous": 40,
+        "cultural": 90,
+        "relaxed": 80
+      }
+    },
+    {
+      "id": 8,
+      "name": "Scottish Highlands",
+      "description": "Rugged mountains, serene lochs, and fascinating history.",
+      "imageUrl": "https://images.unsplash.com/photo-1610296647932-96cd59c540b2?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Isle of Skye", "Loch Ness", "Hiking trails", "Castles"],
+      "personalityTypes": ["adventurous", "cultural"],
+      "matchScore": {
+        "adventurous": 90,
+        "cultural": 80,
+        "relaxed": 40
+      }
+    },
+    {
+      "id": 9,
+      "name": "Dubrovnik, Croatia",
+      "description": "Medieval walls, crystal clear waters, and rich history.",
+      "imageUrl": "https://images.unsplash.com/photo-1533619043865-1c6e4f1f5c0f?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["City Walls", "Old Town", "Island tours", "Game of Thrones"],
+      "personalityTypes": ["cultural", "adventurous"],
+      "matchScore": {
+        "adventurous": 85,
+        "cultural": 90,
+        "relaxed": 45
+      }
+    },
+    {
+      "id": 10,
+      "name": "Copenhagen, Denmark",
+      "description": "Modern design, cycling culture, and the happiest people on Earth.",
+      "imageUrl": "https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Nyhavn", "Tivoli Gardens", "Design museums", "Food scene"],
+      "personalityTypes": ["cultural", "relaxed"],
+      "matchScore": {
+        "adventurous": 35,
+        "cultural": 85,
+        "relaxed": 90
+      }
+    },
+    {
+      "id": 11,
+      "name": "Berlin, Germany",
+      "description": "A city of history, art, and vibrant nightlife.",
+      "imageUrl": "https://images.unsplash.com/photo-1560969184-10fe8719e047?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Berlin Wall", "Museums", "Nightlife", "Street Art"],
+      "personalityTypes": ["cultural", "adventurous"],
+      "matchScore": {
+        "adventurous": 85,
+        "cultural": 90,
+        "relaxed": 40
+      }
+    },
+    {
+      "id": 12,
+      "name": "Porto, Portugal",
+      "description": "Historic architecture, port wine, and charming riverside views.",
+      "imageUrl": "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Ribeira", "Port Wine", "Historic Center", "River Views"],
+      "personalityTypes": ["cultural", "relaxed"],
+      "matchScore": {
+        "adventurous": 40,
+        "cultural": 85,
+        "relaxed": 85
+      }
+    },
+    {
+      "id": 13,
+      "name": "Edinburgh, Scotland",
+      "description": "Historic castles, festivals, and stunning architecture.",
+      "imageUrl": "https://images.unsplash.com/photo-1513735492244-4833d8a1f9c6?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Edinburgh Castle", "Royal Mile", "Festivals", "Arthur's Seat"],
+      "personalityTypes": ["cultural", "adventurous"],
+      "matchScore": {
+        "adventurous": 80,
+        "cultural": 90,
+        "relaxed": 45
+      }
+    },
+    {
+      "id": 14,
+      "name": "Lake Como, Italy",
+      "description": "Stunning lake views, elegant villas, and Italian charm.",
+      "imageUrl": "https://images.unsplash.com/photo-1574428095061-b4f9e80881a5?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Villa del Balbianello", "Bellagio", "Boat Tours", "Gardens"],
+      "personalityTypes": ["relaxed", "cultural"],
+      "matchScore": {
+        "adventurous": 30,
+        "cultural": 80,
+        "relaxed": 95
+      }
+    },
+    {
+      "id": 15,
+      "name": "Helsinki, Finland",
+      "description": "Modern design, sauna culture, and beautiful archipelago.",
+      "imageUrl": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1170&auto=format&fit=crop",
+      "highlights": ["Design District", "Sauna Culture", "Archipelago", "Market Square"],
+      "personalityTypes": ["cultural", "relaxed"],
+      "matchScore": {
+        "adventurous": 35,
+        "cultural": 85,
+        "relaxed": 90
+      }
+    }
+  ]
+} 

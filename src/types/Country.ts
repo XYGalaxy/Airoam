@@ -18,4 +18,26 @@ export interface Activity {
   name: string;
   description: string;
   icon: string;
+}
+
+export interface Country {
+  id: number;
+  name: string;
+  code: string;  // ISO country code (e.g., "ES" for Spain)
+  description?: string;
+  imageUrl?: string;
+  landmarks: string[];  // References to landmark IDs
+  destinations: string[];  // References to destination IDs
+  continent: string;
+  languages: string[];
+  currency: {
+    code: string;
+    name: string;
+    symbol: string;
+  };
+  timeZones: string[];
+}
+
+export interface CountriesData {
+  countries: Country[];
 } 
