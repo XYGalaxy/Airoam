@@ -44,7 +44,7 @@ interface PersonalityType {
 const personalityQuestions = [
   {
     id: 'budgetPhilosophy',
-    dimension: 'Budget Flexibility',
+    dimension: 'budget',
     question: "Your travel funds are like a river. How do you navigate its flow?",
     options: [
       { 
@@ -69,7 +69,7 @@ const personalityQuestions = [
   },
   {
     id: 'experienceIntensity',
-    dimension: 'Experience Intensity',
+    dimension: 'experience',
     question: "If your journey were a musical composition, what would it sound like?",
     options: [
       { 
@@ -94,7 +94,7 @@ const personalityQuestions = [
   },
   {
     id: 'logisticalStyle',
-    dimension: 'Logistical Comfort',
+    dimension: 'logistics',
     question: "Your travel is a journey through a landscape. What's your preferred path?",
     options: [
       { 
@@ -119,7 +119,7 @@ const personalityQuestions = [
   },
   {
     id: 'socialInteraction',
-    dimension: 'Social Interaction',
+    dimension: 'social',
     question: "In the grand theater of travel, what's your preferred role?",
     options: [
       { 
@@ -144,7 +144,7 @@ const personalityQuestions = [
   },
   {
     id: 'emotionalMotivation',
-    dimension: 'Emotional Motivation',
+    dimension: 'emotional',
     question: "Your travel is a story. What chapter are you seeking to write?",
     options: [
       { 
@@ -187,11 +187,11 @@ export const TravelPersonalityTypes = [
       ]
     },
     dimensionPreferences: {
-      budget: 'Balanced',
-      experience: 'Immersive',
-      logistics: 'Adaptive',
-      social: 'Selective',
-      emotional: 'Cultural'
+      budget: 'balanced',
+      experience: 'immersive',
+      logistics: 'adaptive',
+      social: 'selective',
+      emotional: 'cultural'
     },
     reportStyle: {
       tone: 'Reflective and thoughtful',
@@ -219,11 +219,11 @@ export const TravelPersonalityTypes = [
       ]
     },
     dimensionPreferences: {
-      budget: 'Flexible',
-      experience: 'Active',
-      logistics: 'Spontaneous',
-      social: 'Group-oriented',
-      emotional: 'Growth-driven'
+      budget: 'frugal',
+      experience: 'active',
+      logistics: 'spontaneous',
+      social: 'group',
+      emotional: 'growth'
     },
     reportStyle: {
       tone: 'Energetic and enthusiastic',
@@ -251,11 +251,11 @@ export const TravelPersonalityTypes = [
       ]
     },
     dimensionPreferences: {
-      budget: 'Luxurious',
-      experience: 'Comfort-oriented',
-      logistics: 'Structured',
-      social: 'Selective',
-      emotional: 'Escape-focused'
+      budget: 'luxurious',
+      experience: 'comfort',
+      logistics: 'structured',
+      social: 'selective',
+      emotional: 'escape'
     },
     reportStyle: {
       tone: 'Sophisticated and refined',
@@ -283,11 +283,11 @@ export const TravelPersonalityTypes = [
       ]
     },
     dimensionPreferences: {
-      budget: 'Moderate',
-      experience: 'Immersive',
-      logistics: 'Adaptive',
-      social: 'Selective',
-      emotional: 'Cultural-understanding'
+      budget: 'balanced',
+      experience: 'immersive',
+      logistics: 'adaptive',
+      social: 'group',
+      emotional: 'cultural'
     },
     reportStyle: {
       tone: 'Intellectual and insightful',
@@ -315,11 +315,11 @@ export const TravelPersonalityTypes = [
       ]
     },
     dimensionPreferences: {
-      budget: 'Frugal',
-      experience: 'Mixed',
-      logistics: 'Spontaneous',
-      social: 'Solo',
-      emotional: 'Growth-driven'
+      budget: 'frugal',
+      experience: 'active',
+      logistics: 'spontaneous',
+      social: 'solo',
+      emotional: 'growth'
     },
     reportStyle: {
       tone: 'Personal and introspective',
@@ -337,8 +337,17 @@ const determineTravelPersonality = (answers: Answer[]): { primaryPersonality: Pe
   // Convert answers array to object format for easier matching
   const answersObj = answers.reduce((acc, curr) => ({
     ...acc,
-    [curr.dimension]: curr.answer
+    [curr.dimension]: curr.answer.toLowerCase()
   }), {} as Record<string, string>);
+
+  // Define dimension weights
+  const dimensionWeights = {
+    budget: 1.5,
+    experience: 2.0,
+    logistics: 1.5,
+    social: 1.8,
+    emotional: 2.0
+  };
 
   // Complex matching logic with weighted scoring
   const calculatePersonalityMatch = (personalityType: PersonalityType, answers: Record<string, string>) => {
@@ -349,14 +358,17 @@ const determineTravelPersonality = (answers: Answer[]): { primaryPersonality: Pe
     ] as const;
 
     dimensions.forEach(dimension => {
-      const expectedValue = personalityType.dimensionPreferences[dimension];
+      const expectedValue = personalityType.dimensionPreferences[dimension].toLowerCase();
       const userValue = answers[dimension];
+      const weight = dimensionWeights[dimension];
       
-      // Scoring logic with partial matches
+      // Enhanced scoring logic
       if (expectedValue === userValue) {
-        matchScore += 2; // Exact match
-      } else if (expectedValue.includes(userValue)) {
-        matchScore += 1; // Partial match
+        matchScore += 2 * weight; // Exact match
+      } else {
+        // Check for semantic similarity
+        const similarityScore = calculateSemanticSimilarity(expectedValue, userValue);
+        matchScore += similarityScore * weight;
       }
     });
 
@@ -364,6 +376,59 @@ const determineTravelPersonality = (answers: Answer[]): { primaryPersonality: Pe
       type: personalityType,
       score: matchScore
     };
+  };
+
+  // Helper function to calculate semantic similarity between two values
+  const calculateSemanticSimilarity = (value1: string, value2: string): number => {
+    // Define semantic groups
+    const semanticGroups = {
+      budget: {
+        luxurious: ['luxury', 'premium', 'high-end'],
+        balanced: ['moderate', 'mixed', 'flexible'],
+        frugal: ['budget', 'economical', 'cost-effective']
+      },
+      experience: {
+        immersive: ['cultural', 'deep', 'authentic'],
+        active: ['adventure', 'thrilling', 'dynamic'],
+        comfort: ['relaxed', 'leisurely', 'easy-going']
+      },
+      logistics: {
+        structured: ['planned', 'organized', 'methodical'],
+        adaptive: ['flexible', 'balanced', 'mixed'],
+        spontaneous: ['unplanned', 'free', 'impulsive']
+      },
+      social: {
+        group: ['social', 'communal', 'shared'],
+        selective: ['balanced', 'mixed', 'moderate'],
+        solo: ['independent', 'alone', 'personal']
+      },
+      emotional: {
+        cultural: ['learning', 'understanding', 'discovery'],
+        growth: ['challenge', 'development', 'achievement'],
+        escape: ['relaxation', 'rejuvenation', 'renewal']
+      }
+    };
+
+    // Find the dimension for these values
+    const dimension = Object.keys(semanticGroups).find(dim => 
+      Object.values(semanticGroups[dim as keyof typeof semanticGroups]).some(group => 
+        group.includes(value1.toLowerCase()) || group.includes(value2.toLowerCase())
+      )
+    );
+
+    if (!dimension) return 0;
+
+    // Check if values belong to the same semantic group
+    const groups = semanticGroups[dimension as keyof typeof semanticGroups];
+    const value1Group = Object.entries(groups).find(([_, group]) => 
+      group.includes(value1.toLowerCase())
+    )?.[0];
+    const value2Group = Object.entries(groups).find(([_, group]) => 
+      group.includes(value2.toLowerCase())
+    )?.[0];
+
+    if (value1Group === value2Group) return 1.5; // Same semantic group
+    return 0.5; // Different semantic groups but related
   };
 
   // Calculate matches for all personality types
@@ -400,10 +465,19 @@ const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onCompl
   const [personality, setPersonality] = useState<PersonalityType | null>(null);
 
   const handleAnswer = (questionId: string, value: string) => {
-    setAnswers([
-      ...answers,
-      { question: questionId, answer: value, dimension: value as 'budget' | 'experience' | 'logistics' | 'social' | 'emotional' },
-    ]);
+    const question = personalityQuestions.find(q => q.id === questionId);
+    if (!question) return;
+    
+    setAnswers(prevAnswers => {
+      // Remove any existing answer for this question
+      const filteredAnswers = prevAnswers.filter(a => a.question !== questionId);
+      // Add the new answer
+      return [...filteredAnswers, {
+        question: questionId,
+        answer: value,
+        dimension: question.dimension as 'budget' | 'experience' | 'logistics' | 'social' | 'emotional'
+      }];
+    });
   };
 
   const handleNext = () => {
@@ -423,7 +497,16 @@ const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onCompl
   };
 
   const handleContinue = () => {
-    onComplete(answers.reduce((acc, a) => ({ ...acc, [a.question]: a.answer }), {}));
+    // Convert answers to the format expected by onComplete
+    const formattedAnswers = answers.reduce((acc, curr) => {
+      const question = personalityQuestions.find(q => q.id === curr.question);
+      if (question) {
+        acc[question.dimension] = curr.answer;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+    
+    onComplete(formattedAnswers);
   };
 
   const question = personalityQuestions[currentQuestion];
