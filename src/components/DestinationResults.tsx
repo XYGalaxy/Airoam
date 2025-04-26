@@ -16,29 +16,30 @@ interface DestinationResultsProps {
 const getRecommendedDestinations = (answers: Record<string, string>): Destination[] => {
   // Extract personality traits from answers
   const personalityTraits = {
-    social: answers.socialPreference === 'alone' ? 'relaxed' : 'adventurous',
-    planning: answers.planningStyle === 'planned' ? 'cultural' : 'adventurous',
-    focus: answers.focusPreference === 'history' ? 'cultural' : 'relaxed'
+    planning: answers.planning === 'detailed' ? 'cultural' : 
+              answers.planning === 'spontaneous' ? 'adventurous' : 'relaxed',
+    exploration: answers.exploration === 'landmarks' ? 'cultural' :
+                answers.exploration === 'local' ? 'adventurous' : 'relaxed',
+    pace: answers.pace === 'fast' ? 'adventurous' :
+          answers.pace === 'slow' ? 'relaxed' : 'cultural',
+    food: answers.food === 'local' ? 'adventurous' :
+          answers.food === 'familiar' ? 'relaxed' : 'cultural'
   };
   
   // Filter destinations based on personality traits
   const destinations = destinationsData.destinations as unknown as Destination[];
   
   const filteredDestinations = destinations
-    .filter(dest => 
-      dest.personalityTypes.includes(personalityTraits.social) ||
-      dest.personalityTypes.includes(personalityTraits.planning) ||
-      dest.personalityTypes.includes(personalityTraits.focus)
-    )
     .map(dest => {
       // Calculate match percentage based on personality traits
-      const matchScores = [
-        dest.matchScore[personalityTraits.social] || 0,
-        dest.matchScore[personalityTraits.planning] || 0,
-        dest.matchScore[personalityTraits.focus] || 0
-      ];
+      const matchScores = Object.values(personalityTraits).map(trait => 
+        dest.matchScore[trait] || 0
+      );
       
-      const avgMatch = Math.round(matchScores.reduce((sum, score) => sum + score, 0) / matchScores.length);
+      // Calculate weighted average based on how many traits match
+      const avgMatch = Math.round(
+        matchScores.reduce((sum, score) => sum + score, 0) / matchScores.length
+      );
       
       return {
         ...dest,

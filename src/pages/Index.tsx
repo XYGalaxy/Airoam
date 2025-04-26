@@ -13,7 +13,7 @@ const Index = () => {
 
   const handlePersonalityComplete = (answers: Record<string, string>) => {
     setPersonalityAnswers(answers);
-    setActiveTab("personality");
+    setActiveTab("activity");
   };
 
   return (
