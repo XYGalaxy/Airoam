@@ -141,7 +141,7 @@ travel-planner/
 ```
 
 ## Project Video
-
+[5-Minute Demo Video | AIROAM](https://www.youtube.com/watch?v=7JBjwC4-oGs)
 
 ## Team Members
 Josie Zhang (@Josie0316), Zhen Qi (@zqi4869), Xinyue Gao (@XYGalaxy)
