@@ -1,73 +1,147 @@
-# Welcome to your Lovable project
+# Travel Planner - Airoam
 
-## Project info
+## Description
+Airoam is a modern web application that helps users plan their trips with AI-powered recommendations and interactive maps. Built with React, TypeScript, and Express.js, it provides a seamless experience for discovering and planning travel destinations.
 
-**URL**: https://lovable.dev/projects/197f5a97-c720-436f-9fd5-5afd76a31415
+## Architecture
+```ascii
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|  Frontend        |     |  Backend         |     |  External APIs   |
+|  (React + TS)    |     |  (Express.js)    |     |                  |
+|                  |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+        |                        |                        |
+        |                        |                        |
+        v                        v                        v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|  User Interface  |     |  API Gateway     |     |  Google Places   |
+|  - Maps          |     |  - Auth          |     |  - Places API    |
+|  - Search        |     |  - Routes        |     |  - Maps API      |
+|  - Itinerary     |     |  - Middleware    |     |                  |
+|  - Photos        |     |                  |     |                  |
+|                  |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+        |                        |                        |
+        |                        |                        |
+        v                        v                        v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|  State Management|     |  Business Logic  |     |  OpenAI API      |
+|  - React Query   |     |  - AI Processing |     |  - GPT Models    |
+|  - Context       |     |  - Data Processing|     |  - Embeddings   |
+|  - Local Storage |     |                  |     |                  |
+|                  |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+```
 
-## How can I edit this code?
 
-There are several ways of editing your application.
+### Short description
+Our app is a sophisticated travel planning system built using React and TypeScript for the frontend, with a Node.js/Express backend. It leverages the Google Places API for location data and OpenAI's API for intelligent travel recommendations. The application features a modern UI built with Tailwind CSS and Shadcn UI components, providing a responsive and intuitive user experience.
 
-**Use Lovable**
+### Data sources used
+- Google Places API for location data, reviews, and place details
+- OpenAI API for generating personalized travel recommendations
+- Express.js backend for API proxying and business logic
+- Local storage for saving user preferences and trip data
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/197f5a97-c720-436f-9fd5-5afd76a31415) and start prompting.
+### Key Features
+- Interactive map integration with Google Maps
+- AI-powered travel recommendations
+- Place search with detailed information
+- Photo galleries for destinations
+- Personalized itinerary planning
+- Budget planning assistance
+- Accommodation recommendations
 
-Changes made via Lovable will be committed automatically to this repo.
+## Technology & Languages
 
-**Use your preferred IDE**
+- **Frontend:**
+  - React
+  - TypeScript
+  - Tailwind CSS
+  - Shadcn UI
+  - React Router
+  - React Query
+  - React Hook Form
+  - Zod
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Backend:**
+  - Node.js
+  - Express.js
+  - OpenAI API
+  - Google Places API
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Development Tools:**
+  - Vite
+  - ESLint
+  - Jest
+  - TypeScript
+  - PostCSS
 
-Follow these steps:
+## Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Google Places API key
+- OpenAI API key
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Clone the repository:
+```bash
+git clone [your-repository-url]
+cd travel-planner
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env` file in the root directory with the following variables:
+```
+VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key
+VITE_OPENAI_API_KEY=your_openai_api_key
+PORT=3000
+```
+
+4. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. Start the backend server:
+```bash
+npm run server
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Who can benefit from your app?
+- Travel enthusiasts looking for personalized trip planning
+- Tourists seeking detailed information about destinations
+- Travel agencies needing a modern planning tool
+- Individual travelers wanting AI-powered recommendations
+- Users looking for an interactive way to explore new places
 
-**Use GitHub Codespaces**
+## Project Structure
+```
+travel-planner/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/         # Page components
+│   ├── services/      # API services
+│   ├── hooks/         # Custom React hooks
+│   ├── contexts/      # React contexts
+│   ├── types/         # TypeScript type definitions
+│   └── lib/           # Utility functions
+├── public/            # Static assets
+└── server.js          # Express backend server
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/197f5a97-c720-436f-9fd5-5afd76a31415) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
