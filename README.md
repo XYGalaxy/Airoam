@@ -143,5 +143,20 @@ travel-planner/
 ## Project Video
 [5-Minute Demo Video | AIROAM](https://www.youtube.com/watch?v=7JBjwC4-oGs)
 
+Welcome to the final demo video of AIROAM, a revolutionary AI-powered travel planning platform. In this video, our diverse team from Finland 🇫🇮, France 🇫🇷, and the Netherlands 🇳🇱 gives you a comprehensive walkthrough of AIROAM and its capabilities. Whether you’re a planner or spontaneous traveler, AIROAM instantly generates personalized travel recommendations based on your interests, preferences, and budget. It’s fast, fun, and most importantly, designed to make travel planning feel like discovering, not a chore.
+
+Watch to see how AI helps create a seamless travel experience and how we built this innovative tool with AI at every step of the process. From planning to discovering new destinations, AIROAM is here to transform your travel journey.
+
+Key Features:
+Personalized travel recommendations based on your interests and personality
+
+No more endless tabs, just quick and efficient itineraries
+
+Built with AI at every level, from the frontend to the backend
+
+Designed to make travel planning feel like inspiration, not a hassle
+
+We also dive into the development process, challenges we faced, and how AI played a central role in building AIROAM. It's not just a tool — it’s a blueprint for how human-AI collaboration can shape the future.
+
 ## Team Members
 Josie Zhang (@Josie0316), Zhen Qi (@zqi4869), Xinyue Gao (@XYGalaxy)
