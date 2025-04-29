@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Label } from '../components/ui/label';
 import { Compass, MapPin, Heart } from 'lucide-react';
-import { usePersonality } from '@/contexts/PersonalityContext';
 
 interface PersonalityRecommenderProps {
   onComplete: (answers: Record<string, string>) => void;
-  onProgressChange?: (current: number, total: number) => void;
 }
 
 interface Answer {
@@ -447,19 +445,24 @@ const determineTravelPersonality = (answers: Answer[]): { primaryPersonality: Pe
   };
 };
 
-const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onComplete, onProgressChange }) => {
+// Example Usage
+const sampleAnswers: Answer[] = [
+  { question: 'budgetPhilosophy', answer: 'Balanced', dimension: 'budget' },
+  { question: 'experienceIntensity', answer: 'Immersive', dimension: 'experience' },
+  { question: 'logisticalStyle', answer: 'Adaptive', dimension: 'logistics' },
+  { question: 'socialInteraction', answer: 'Selective', dimension: 'social' },
+  { question: 'emotionalMotivation', answer: 'Cultural', dimension: 'emotional' }
+];
+
+const result = determineTravelPersonality(sampleAnswers);
+console.log(result);
+
+
+const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [personality, setPersonality] = useState<PersonalityType | null>(null);
-  const { setPersonality: setGlobalPersonality } = usePersonality();
-
-  // 通知父组件进度
-  useEffect(() => {
-    if (onProgressChange) {
-      onProgressChange(currentQuestion, personalityQuestions.length);
-    }
-  }, [currentQuestion, onProgressChange]);
 
   const handleAnswer = (questionId: string, value: string) => {
     const question = personalityQuestions.find(q => q.id === questionId);
@@ -483,7 +486,6 @@ const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onCompl
     } else {
       const result = determineTravelPersonality(answers);
       setPersonality(result.primaryPersonality);
-      setGlobalPersonality(result.primaryPersonality);
       setShowResults(true);
     }
   };
@@ -570,27 +572,10 @@ const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onCompl
   return (
     <Card className="w-full max-w-2xl mx-auto animate-fade-in">
       <CardHeader>
-        <div className="text-center mb-4 space-y-2">
-          {(() => {
-            type QuestionLines = {
-              [key: string]: [string, string];
-            };
-            const questionLines: QuestionLines = {
-              'budgetPhilosophy': ['Your travel funds are like a river.', 'How do you navigate its flow?'],
-              'experienceIntensity': ['If your journey were a musical composition,', 'what would it sound like?'],
-              'logisticalStyle': ['Your travel is a journey through a landscape.', 'What\'s your preferred path?'],
-              'socialInteraction': ['In the grand theater of travel,', 'what\'s your preferred role?'],
-              'emotionalMotivation': ['Your travel is a story.', 'What chapter are you seeking to write?']
-            };
-            const lines = questionLines[question.id];
-            return (
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-sky-800">{lines[0]}</div>
-                <div className="text-2xl font-bold text-sky-800">{lines[1]}</div>
-              </div>
-            );
-          })()}
-        </div>
+        <CardTitle className="text-2xl">Question {currentQuestion + 1} of {personalityQuestions.length}</CardTitle>
+        <CardDescription>
+          {question.question}
+        </CardDescription>
       </CardHeader>
       <CardContent>
           <RadioGroup 
@@ -625,4 +610,4 @@ const PersonalityRecommender: React.FC<PersonalityRecommenderProps> = ({ onCompl
   );
 };
 
-export default PersonalityRecommender; 
+export default PersonalityRecommender;

@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Beer, Coffee, Mountain, Leaf, Wine, Music, Umbrella, Building, Camera } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { ScrollArea } from '../components/ui/scroll-area';
+import { Beer, Coffee, Mountain, Leaf, Wine, Music, Umbrella, Building, Camera, ShoppingCart, Trash2, Plus, Map } from 'lucide-react';
+import { GoogleMap, Marker, InfoWindow, LoadScript } from '@react-google-maps/api';
 import TravelMap from './TravelMap';
 import LandmarkDetail from './LandmarkDetail';
-import { searchPlaces, getPlaceDetails, Landmark } from '../services/placesService';
-import { searchPlaces as searchOSMPlaces, convertToLandmark as convertOSMLandmark } from '@/services/openStreetMapService';
-import { getPlaceType, getKeyword } from '@/services/placesService';
-import { EuropeanCountry } from '../types/Country';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { LatLng } from 'leaflet';
+import { searchPlaces, getPlaceDetails, Landmark as PlacesLandmark } from '../services/placesService';
+import { searchPlaces as searchOSMPlaces, convertToLandmark as convertOSMLandmark } from '../services/openStreetMapService';
+import { getPlaceType, getKeyword } from '../services/placesService';
+import { EuropeanCountry, ActivityType, Activity } from '../types/Country';
+import { Landmark } from '../types/Landmark';
+import './ActivityPlanner.css';
 import 'leaflet/dist/leaflet.css';
+import { useLandmarks } from '@/contexts/LandmarksContext';
+import Chatbot from './Chatbot';
 
 type ActivityType = 'nature' | 'culture' | 'food' | 'shopping' | 'nightlife';
 
@@ -21,15 +24,6 @@ interface Activity {
   icon: string;
   description: string;
 }
-
-const activities = [
-  { id: 'hiking', name: 'Hiking' },
-  { id: 'museum', name: 'Museum' },
-  { id: 'wine', name: 'Wine' },
-  { id: 'coffee', name: 'Coffee' },
-  { id: 'mushroom', name: 'Mushroom' },
-  { id: 'more', name: 'More' }
-];
 
 // Mock data for landmarks based on activities
 const landmarksByActivity: Record<string, Landmark[]> = {
@@ -44,7 +38,8 @@ const landmarksByActivity: Record<string, Landmark[]> = {
       priceLevel: 2,
       estimatedDays: 3,
       country: 'Italy',
-      source: 'mock'
+      source: 'mock',
+      countryDescription: 'Italy offers some of the most diverse hiking experiences in Europe, from the dramatic coastal trails of Cinque Terre to the challenging paths of the Dolomites. The country\'s rich history and stunning landscapes make every hike a journey through time and nature.'
     },
     {
       id: '2',
@@ -56,7 +51,8 @@ const landmarksByActivity: Record<string, Landmark[]> = {
       priceLevel: 3,
       estimatedDays: 7,
       country: 'France/Italy/Switzerland',
-      source: 'mock'
+      source: 'mock',
+      countryDescription: 'The Alps offer some of the most spectacular hiking in the world, with the Tour du Mont Blanc being one of the most famous long-distance trails. This region combines French charm, Italian passion, and Swiss precision in a breathtaking mountain setting.'
     }
   ],
   castles: [
@@ -181,13 +177,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Switzerland',
-          description: '阿尔卑斯山脉的壮丽景色，从少女峰到马特洪峰，徒步者的天堂。',
+          description: 'Alpine scenery, from Jungfrau to Matterhorn, the paradise for hikers.',
           coordinates: [8.2275, 46.8182],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Norway',
-          description: '峡湾和极光，挪威的自然景观令人叹为观止，是徒步旅行的绝佳选择。',
+          description: 'The fjords and the Northern Lights, Norway\'s natural beauty is breathtaking, a perfect choice for hiking.',
           coordinates: [10.7522, 59.9139],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -198,13 +194,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Portugal',
-          description: '阿尔加维海岸线，风景如画的海岸徒步路线。',
+          description: 'The Algarve Coast, a scenic coastal hiking route.',
           coordinates: [-8.2245, 39.3999],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Croatia',
-          description: '亚得里亚海沿岸的美丽徒步路线。',
+          description: 'The beautiful hiking route along the Adriatic Sea.',
           coordinates: [15.2, 45.1],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -217,13 +213,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Italy',
-          description: '乌菲兹美术馆和梵蒂冈博物馆，文艺复兴艺术的殿堂。',
+          description: 'The Uffizi Gallery and the Vatican Museums, the temple of Renaissance art.',
           coordinates: [12.4964, 41.9028],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'France',
-          description: '卢浮宫和奥赛博物馆，世界级艺术收藏。',
+          description: 'The Louvre and the Orsay Museum, world-class art collection.',
           coordinates: [2.3522, 48.8566],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -234,13 +230,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Greece',
-          description: '雅典国家考古博物馆，古希腊文明的见证。',
+          description: 'The National Archaeological Museum of Greece, the witness of ancient Greek civilization.',
           coordinates: [23.7275, 37.9838],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'UK',
-          description: '大英博物馆，世界历史文化的宝库。',
+          description: 'The British Museum, the treasure trove of world history and culture.',
           coordinates: [-0.1276, 51.5074],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -253,13 +249,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Italy',
-          description: '威尼斯和罗马的百年咖啡馆，意式咖啡文化的发源地。',
+          description: 'The cafes in Venice and Rome, the birthplace of Italian coffee culture.',
           coordinates: [12.4964, 41.9028],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Greece',
-          description: '雅典的传统咖啡馆，体验希腊独特的咖啡文化。',
+          description: 'The traditional cafes in Athens, experience Greek coffee culture.',
           coordinates: [23.7275, 37.9838],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -270,13 +266,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Netherlands',
-          description: '阿姆斯特丹的精品咖啡文化，专业的咖啡师培训。',
+          description: 'The Dutch coffee culture in Amsterdam, professional coffee training.',
           coordinates: [4.8952, 52.3702],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Denmark',
-          description: '哥本哈根的咖啡文化，北欧风格的咖啡体验。',
+          description: 'The Danish coffee culture in Copenhagen, Nordic coffee experience.',
           coordinates: [12.5683, 55.6761],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -289,13 +285,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'France',
-          description: '波尔多和勃艮第的葡萄酒品鉴，世界顶级葡萄酒产区。',
+          description: 'Wine tasting in Bordeaux and Burgundy, world-class wine region.',
           coordinates: [2.3522, 48.8566],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Italy',
-          description: '托斯卡纳的葡萄酒品鉴，体验意大利葡萄酒文化。',
+          description: 'Wine tasting in Tuscany, experience Italian wine culture.',
           coordinates: [12.4964, 41.9028],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -306,13 +302,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Spain',
-          description: '里奥哈和普里奥拉特的葡萄园之旅。',
+          description: 'The vineyard tour in Rioja and Priorat.',
           coordinates: [-3.7038, 40.4168],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Portugal',
-          description: '杜罗河谷的葡萄园，波特酒的故乡。',
+          description: 'The vineyard tour in the Douro Valley, the birthplace of Port wine.',
           coordinates: [-8.2245, 39.3999],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -325,13 +321,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Sweden',
-          description: '瑞典森林的蘑菇采摘体验，北欧独特的蘑菇文化。',
+          description: 'The mushroom picking experience in Swedish forests, Nordic mushroom culture.',
           coordinates: [18.0686, 59.3293],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Finland',
-          description: '芬兰森林的蘑菇采摘，体验北欧自然文化。',
+          description: 'The mushroom picking experience in Finnish forests, experience Nordic natural culture.',
           coordinates: [24.9384, 60.1699],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -342,13 +338,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'France',
-          description: '普罗旺斯的松露市场，法国蘑菇文化的代表。',
+          description: 'The truffle market in Provence, the representative of French mushroom culture.',
           coordinates: [2.3522, 48.8566],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Italy',
-          description: '托斯卡纳的蘑菇市场，意大利美食文化的一部分。',
+          description: 'The mushroom market in Tuscany, part of Italian food culture.',
           coordinates: [12.4964, 41.9028],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -361,13 +357,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Spain',
-          description: '巴塞罗那的波盖利亚市场，体验西班牙美食文化。',
+          description: 'The La Boqueria market in Barcelona, experience Spanish food culture.',
           coordinates: [-3.7038, 40.4168],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Greece',
-          description: '雅典的中央市场，体验希腊传统市场文化。',
+          description: 'The Central Market in Athens, experience Greek traditional market culture.',
           coordinates: [23.7275, 37.9838],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -378,13 +374,13 @@ const interestsByActivity: Record<string, Array<{
       countries: [
         {
           name: 'Turkey',
-          description: '伊斯坦布尔的街头美食，体验土耳其美食文化。',
+          description: 'The street food in Istanbul, experience Turkish food culture.',
           coordinates: [28.9784, 41.0082],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         },
         {
           name: 'Germany',
-          description: '柏林的街头美食，体验德国美食文化。',
+          description: 'The street food in Berlin, experience German food culture.',
           coordinates: [13.4050, 52.5200],
           imageUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963'
         }
@@ -394,36 +390,36 @@ const interestsByActivity: Record<string, Array<{
 };
 
 // 添加欧洲国家列表
-const europeanCountries: EuropeanCountry[] = [
+const europeanCountries = [
   {
     id: 'france',
     name: 'France',
-    capital: 'Paris',
-    description: 'Known for its rich culture, iconic landmarks like the Eiffel Tower, world-class cuisine, and beautiful countryside.',
-    imageUrl: '/images/france.jpg',
-    location: { latitude: 46.2276, longitude: 2.2137 },
-    recommendedDays: 7,
-    popularActivities: ['Visit the Eiffel Tower', 'Explore the Louvre', 'Wine tasting in Bordeaux']
+    description: 'France is renowned for its rich culture, world-class cuisine, and iconic landmarks. From the romantic streets of Paris to the sun-kissed vineyards of Bordeaux, France offers a perfect blend of history, art, and gastronomy.',
+    location: { latitude: 46.2276, longitude: 2.2137 }
   },
   {
     id: 'italy',
     name: 'Italy',
-    capital: 'Rome',
-    description: 'Home to ancient ruins, artistic treasures, famous cuisine, and stunning landscapes.',
-    imageUrl: '/images/italy.jpg',
-    location: { latitude: 41.8719, longitude: 12.5674 },
-    recommendedDays: 10,
-    popularActivities: ['Visit the Colosseum', 'Explore Venice canals', 'Tour Tuscan vineyards']
+    description: 'Italy is a treasure trove of art, history, and culinary delights. From the ancient ruins of Rome to the Renaissance masterpieces of Florence, and the romantic canals of Venice, Italy offers an unforgettable cultural experience.',
+    location: { latitude: 41.8719, longitude: 12.5674 }
   },
   {
     id: 'spain',
     name: 'Spain',
-    capital: 'Madrid',
-    description: 'Famous for its vibrant culture, flamenco dancing, tapas cuisine, and historic architecture.',
-    imageUrl: 'https://source.unsplash.com/featured/?madrid,spain',
-    location: { latitude: 40.4168, longitude: -3.7038 },
-    recommendedDays: 10,
-    popularActivities: ['Visit Sagrada Familia', 'Tour the Prado Museum', 'Experience flamenco']
+    description: 'Spain is a vibrant country known for its passionate culture, stunning architecture, and diverse landscapes. From the bustling streets of Barcelona to the historic charm of Seville, Spain offers a perfect mix of tradition and modernity.',
+    location: { latitude: 40.4168, longitude: -3.7038 }
+  },
+  {
+    id: 'germany',
+    name: 'Germany',
+    description: 'Germany is a country of contrasts, from the modern metropolis of Berlin to the fairytale castles of Bavaria. Known for its rich history, engineering excellence, and world-famous beer culture.',
+    location: { latitude: 51.1657, longitude: 10.4515 }
+  },
+  {
+    id: 'uk',
+    name: 'United Kingdom',
+    description: 'The UK is a fascinating blend of history and modernity. From the iconic landmarks of London to the stunning landscapes of Scotland, the UK offers a diverse range of experiences for every traveler.',
+    location: { latitude: 55.3781, longitude: -3.4360 }
   }
 ];
 
@@ -482,12 +478,7 @@ interface PlaceDetails {
 }
 
 interface ActivityPlannerProps {
-  landmarks: Landmark[];
-  onLandmarkSelect: (landmark: Landmark) => void;
-  selectedLandmark: Landmark | null;
-  activities: string[];
-  selectedActivity: string | null;
-  onActivitySelect: (activity: string) => void;
+  onLandmarkSelect?: (landmarks: any[]) => void;
 }
 
 interface ActivityPlannerState {
@@ -496,7 +487,6 @@ interface ActivityPlannerState {
   landmarks: Landmark[];
   selectedLandmark: Landmark | null;
   loading: boolean;
-  showCountrySelector: boolean;
   interests: string[];
 }
 
@@ -584,19 +574,161 @@ const mockLandmarksByActivity = {
   // ... other activity mock data ...
 };
 
-const ActivityPlanner: React.FC = () => {
+const getActivityIcon = (activityId: string): string => {
+  switch (activityId) {
+    case 'hiking':
+      return '🏔️';
+    case 'museum':
+      return '🏛️';
+    case 'wine':
+      return '🍷';
+    case 'coffee':
+      return '☕';
+    case 'mushroom':
+      return '🍄';
+    default:
+      return '📍';
+  }
+};
+
+const getActivityDescription = (activityId: string): string => {
+  switch (activityId) {
+    case 'hiking':
+      return 'Explore scenic trails and natural landscapes';
+    case 'museum':
+      return 'Discover art, history, and culture';
+    case 'wine':
+      return 'Experience local vineyards and wine tasting';
+    case 'coffee':
+      return 'Find the best local coffee spots';
+    case 'mushroom':
+      return 'Learn about local fungi and foraging';
+    default:
+      return 'Explore points of interest';
+  }
+};
+
+const SERVER_PORT = 3000;
+const PROXY_BASE_URL = `http://localhost:${SERVER_PORT}/api/places`;
+
+const getMarkerIcon = (activityType: string): string => {
+  switch (activityType) {
+    case 'historical':
+      return '/markers/historical.png';
+    case 'nature':
+      return '/markers/nature.png';
+    case 'entertainment':
+      return '/markers/entertainment.png';
+    case 'dining':
+      return '/markers/dining.png';
+    default:
+      return '/markers/default.png';
+  }
+};
+
+// 将 libraries 配置移到组件外部
+const libraries: ("places" | "marker")[] = ['places', 'marker'];
+
+// 兜底生成唯一 id 的函数
+const generateStableId = (place: any): string => {
+  const name = place.name || '';
+  const lat = place.location?.lat || place.location?.latitude || 0;
+  const lng = place.location?.lng || place.location?.longitude || 0;
+  return `place-${name.toLowerCase().replace(/\s+/g, '-')}-${lat}-${lng}`;
+};
+
+const ActivityPlanner: React.FC<ActivityPlannerProps> = ({ onLandmarkSelect }) => {
+  const { selectedLandmarks, addLandmark, removeLandmark } = useLandmarks();
   const [state, setState] = useState<ActivityPlannerState>({
     selectedCountry: null,
     selectedActivity: null,
     landmarks: [],
     selectedLandmark: null,
     loading: false,
-    showCountrySelector: false,
     interests: []
   });
 
-  // 缓存已加载的地标数据
-  const landmarkCache = useRef<Record<string, Landmark[]>>({});
+  const [activities, setActivities] = useState([
+    { id: 'hiking', name: 'Hiking', icon: Mountain },
+    { id: 'museum', name: 'Museum', icon: Building },
+    { id: 'wine', name: 'Wine', icon: Wine },
+    { id: 'coffee', name: 'Coffee', icon: Coffee },
+    { id: 'mushroom', name: 'Mushroom', icon: Leaf },
+    { id: 'more', name: 'More', icon: Camera }
+  ]);
+
+  const [itinerary, setItinerary] = useState<Landmark[]>([]);
+  const [showItinerary, setShowItinerary] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
+
+  // 添加 useEffect 来处理 selectedLandmarks 的变化
+  useEffect(() => {
+    if (onLandmarkSelect) {
+      onLandmarkSelect(selectedLandmarks);
+    }
+  }, [selectedLandmarks, onLandmarkSelect]);
+
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  const mapContainerStyle = {
+    width: '100%',
+    height: '100%',
+    minHeight: '400px',
+    position: 'relative' as const
+  };
+
+  const defaultCenter = {
+    lat: 48.8566,
+    lng: 2.3522
+  };
+
+  const defaultOptions = {
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    styles: [
+      {
+        featureType: "poi",
+        elementType: "labels",
+        stylers: [{ visibility: "off" }]
+      }
+    ]
+  };
+
+  const onMapLoad = React.useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    setMapLoaded(true);
+  }, []);
+
+  const renderInfoWindow = (landmark: Landmark) => (
+    <div className="info-window">
+      <h3 className="font-bold text-lg">{landmark.name}</h3>
+      <p className="text-sm text-gray-600">{landmark.description}</p>
+      {landmark.rating && (
+        <div className="flex items-center mt-1">
+          <span className="text-yellow-500">★</span>
+          <span className="ml-1 text-sm">{landmark.rating.toFixed(1)}</span>
+        </div>
+      )}
+      {landmark.priceLevel && (
+        <div className="text-sm text-gray-500">
+          {'$'.repeat(landmark.priceLevel)}
+        </div>
+      )}
+      {landmark.website && (
+        <a 
+          href={landmark.website} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-sm text-blue-500 hover:underline mt-2 block"
+        >
+          Visit Website
+        </a>
+      )}
+    </div>
+  );
 
   const getActivityCategory = (activityType: ActivityType): string => {
     switch (activityType) {
@@ -620,100 +752,34 @@ const ActivityPlanner: React.FC = () => {
   };
 
   const handleActivitySelect = async (activity: { id: string; name: string }) => {
-    console.log('Selected activity:', activity);
-    
-    setState(prev => ({
-      ...prev,
-      selectedActivity: activity,
-      selectedCountry: null,
-      landmarks: [],
-      showCountrySelector: false,
-      interests: []
-    }));
-  };
-
-  const handleCountrySelect = async (country: EuropeanCountry) => {
-    console.log('Selected country:', country);
-    
-    if (!state.selectedActivity) {
-      console.error('No activity selected');
-      return;
-    }
-
-    const category = getActivityCategory(state.selectedActivity.type);
-    const location = `${country.location.latitude},${country.location.longitude}`;
-    const radius = 50000; // 50km radius
-
     try {
-      const type = getPlaceType(category);
-      const keyword = getKeyword(category);
-      
-      console.log('Searching places with params:', {
-        location,
-        radius,
-        type,
-        keyword
-      });
+      setState(prev => ({
+        ...prev,
+        selectedActivity: {
+          type: activity.id as ActivityType,
+          name: activity.name,
+          icon: getActivityIcon(activity.id),
+          description: getActivityDescription(activity.id)
+        },
+        selectedCountry: null,
+        landmarks: [],
+        interests: []
+      }));
 
-      const response = await searchPlaces({
-        location,
-        radius,
-        type,
-        keyword
-      });
-
-      console.log('Places API response:', response);
-
-      if (response) {
-        const mappedLandmarks: Landmark[] = response.map(landmark => ({
-          id: landmark.id,
-          name: landmark.name,
-          location: landmark.location,
-          description: landmark.description,
-          imageUrl: landmark.imageUrl,
-          rating: landmark.rating,
-          priceLevel: landmark.priceLevel,
-          type: category,
-          estimatedDays: 1,
-          country: country.name,
-          source: 'google'
-        }));
-
-        setState(prev => ({
-          ...prev,
-          selectedCountry: country,
-          landmarks: mappedLandmarks,
-          showCountrySelector: false
-        }));
+      // 获取该活动对应的兴趣列表
+      const activityInterests = interestsByActivity[activity.id] || [];
+      if (activityInterests.length > 0) {
+        // 不自动设置 interests，只有用户点击兴趣按钮时才设置
       }
     } catch (error) {
-      console.error('Error fetching places:', error);
-    }
-  };
-
-  const handleLandmarkSelect = async (landmark: Landmark) => {
-    setState(prev => ({
-      ...prev,
-      selectedLandmark: landmark
-    }));
-
-    try {
-      const details = await getPlaceDetails(landmark.id);
-      if (details) {
-        setState(prev => ({
-          ...prev,
-          selectedLandmarkDetails: details
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching landmark details:', error);
+      console.error('Error selecting activity:', error);
     }
   };
 
   const handleInterestSelect = (interestName: string) => {
     if (!state.selectedActivity) return;
 
-    const interest = interestsByActivity[state.selectedActivity.id]?.find(
+    const interest = interestsByActivity[state.selectedActivity.type]?.find(
       i => i.name === interestName
     );
 
@@ -734,7 +800,7 @@ const ActivityPlanner: React.FC = () => {
       estimatedDays: 3,
       country: country.name,
       source: 'recommended',
-      imageUrl: country.imageUrl
+      countryDescription: country.description
     }));
 
     setState(prev => ({
@@ -746,45 +812,190 @@ const ActivityPlanner: React.FC = () => {
     }));
   };
 
-  const toggleCountrySelector = () => {
-    setState(prev => ({
-      ...prev,
-      showCountrySelector: !prev.showCountrySelector
-    }));
+  const handleCountrySelect = async (country: EuropeanCountry) => {
+    console.log('Selected country:', country);
+    console.log('Country location:', country.location);
+
+    try {
+      setState(prev => ({
+        ...prev,
+        selectedCountry: country,
+        loading: true,
+        landmarks: [],
+        selectedLandmark: null
+      }));
+      
+      // 获取国家中心点
+      const countryCenter = {
+        lat: country.location.latitude,
+        lng: country.location.longitude
+      };
+      console.log('Country center:', countryCenter);
+
+      // 获取当前活动类型
+      const activityType = state.selectedActivity?.type || 'museum';
+      console.log('Searching for activity type:', activityType);
+
+      // 搜索该国家下的地标
+      const places = await searchPlaces(
+        countryCenter,
+        getPlaceType(activityType),
+        50000
+      );
+
+      console.log('Raw places data:', places);
+
+      if (mapRef.current) {
+        const landmarks: Landmark[] = places
+          .filter(place => place && place.location && typeof place.location.lat === 'number' && typeof place.location.lng === 'number')
+          .map(place => ({
+            ...place,
+            id: place.place_id || generateStableId(place),
+            location: {
+              latitude: place.location.lat,
+              longitude: place.location.lng
+            },
+            source: 'google_places',
+            country: country.name
+          }))
+          .filter(l => !!l.id);
+        
+        console.log('Processed landmarks:', landmarks);
+
+        // 设置地图中心点和缩放级别
+        mapRef.current.panTo(countryCenter);
+        mapRef.current.setZoom(12);
+
+        setState(prev => ({
+          ...prev,
+          landmarks,
+          selectedLandmark: null,
+          loading: false
+        }));
+      } else {
+        setState(prev => ({
+          ...prev,
+          loading: false
+        }));
+      }
+    } catch (error) {
+      console.error('Error searching places:', error);
+      setState(prev => ({
+        ...prev,
+        loading: false
+      }));
+    }
   };
-  
+
+  const handleLandmarkSelect = async (landmark: Landmark | null) => {
+    if (!landmark || landmark.source !== 'google_places') {
+      setState(prev => ({ ...prev, selectedLandmark: null }));
+      return;
+    }
+
+    // 先展示基础信息
+    setState(prev => ({ ...prev, selectedLandmark: landmark, loading: false }));
+
+    // 有 place_id 再去 fetch 详情补充内容
+    if (landmark.place_id) {
+      setState(prev => ({ ...prev, loading: true }));
+      try {
+        const details = await getPlaceDetails(landmark.place_id);
+        if (details) {
+          setState(prev => ({
+            ...prev,
+            selectedLandmark: { ...landmark, ...details },
+            loading: false
+          }));
+        } else {
+          setState(prev => ({ ...prev, loading: false }));
+        }
+      } catch (error) {
+        setState(prev => ({ ...prev, loading: false }));
+      }
+    }
+  };
+
+  const handleAddToItinerary = (landmark: Landmark) => {
+    addLandmark(landmark);
+  };
+
+  const handleRemoveFromItinerary = (id: string) => {
+    removeLandmark(id);
+  };
+
+  // AI推荐国家后自动选择国家
+  const handleAIRecommendCountries = (recommendation: { activity: string; countries: Array<{ name: string; reason: string }> }) => {
+    if (!recommendation || !recommendation.activity || !recommendation.countries.length) return;
+    
+    // 更新 activities 列表，替换 "more" 为新的活动
+    const newActivities = activities.map(activity => 
+      activity.id === 'more' 
+        ? { 
+            id: recommendation.activity.toLowerCase(),
+            name: recommendation.activity,
+            icon: Music // 为 theatre 使用 Music 图标
+          }
+        : activity
+    );
+    setActivities(newActivities);
+
+    // 自动选择新的活动
+    handleActivitySelect({
+      id: recommendation.activity.toLowerCase(),
+      name: recommendation.activity
+    });
+
+    // 处理推荐的国家
+    recommendation.countries.slice(0, 3).forEach(country => {
+      const found = europeanCountries.find(c => c.name.toLowerCase() === country.name.toLowerCase());
+      if (found) {
+        found.description = country.reason; // 使用 AI 提供的推荐理由
+        handleCountrySelect(found);
+      }
+    });
+
+    setShowChatbot(false);
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-screen p-6">
-      {/* Left Panel - Activities */}
-      <Card className="lg:col-span-3">
-        <CardHeader>
-          <CardTitle>Let's tailor your European adventure</CardTitle>
-          <CardDescription>
-            What activities interest you?
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-4 gap-4 h-[calc(100vh-2rem)] p-4">
+      {/* 左侧活动选择面板 */}
+      <div className="col-span-1 h-full">
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Select Activity Type</CardTitle>
+            <CardDescription>Select the activity type you are interested in</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
               {activities.map((activity) => (
                 <Button
                   key={activity.id}
-                  variant={state.selectedActivity?.id === activity.id ? "default" : "outline"}
-                  className={`flex-col h-24 ${state.selectedActivity?.id === activity.id ? 'bg-travel-teal hover:bg-travel-teal/90' : ''}`}
-                  onClick={() => handleActivitySelect(activity)}
+                  variant={state.selectedActivity?.type === activity.id ? "default" : "outline"}
+                  className="h-24 flex flex-col items-center justify-center gap-2"
+                  onClick={() => {
+                    if (activity.id === 'more') {
+                      setShowChatbot(true);
+                    } else {
+                      handleActivitySelect(activity);
+                    }
+                  }}
                 >
-                  <span className="mt-2 text-xs">{activity.name}</span>
+                  {React.createElement(activity.icon, { className: "h-6 w-6" })}
+                  <span>{activity.name}</span>
                 </Button>
               ))}
             </div>
-          
+
+            {/* 兴趣选择区域 */}
             {state.selectedActivity && (
               <div className="mt-6">
-                <h3 className="text-sm font-medium mb-2">What specifically interests you?</h3>
+                <h3 className="text-sm font-medium mb-2">Select Specific Interest</h3>
                 <div className="flex flex-wrap gap-2">
-                  {getInterestsByActivity(state.selectedActivity.id).map(interest => (
+                  {interestsByActivity[state.selectedActivity.type]?.map((interest, index) => (
                     <Button
-                      key={interest.name}
+                      key={`${interest.name}-${index}`}
                       variant="outline"
                       size="sm"
                       className={`rounded-full ${
@@ -798,105 +1009,282 @@ const ActivityPlanner: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Center Panel - Map and Countries */}
-      <Card className="lg:col-span-6">
-        <CardContent className="p-0 h-full">
-          <div className="h-full flex flex-col">
-            <div className="flex-1">
-              <TravelMap 
-                landmarks={state.landmarks.map(landmark => ({
-                  id: parseInt(landmark.id.replace('country-', '')),
-                  name: landmark.name,
-                  location: [landmark.location.longitude, landmark.location.latitude]
-                }))}
-                onSelectLandmark={handleLandmarkSelect}
-                selectedLandmark={state.selectedLandmark}
-              />
-            </div>
-            
-            {state.selectedActivity && (
-              <div className="border-t p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-medium">
-                    {state.selectedCountry ? `Selected: ${state.selectedCountry.name}` : 'Select a country'}
-                  </h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleCountrySelector}
-                  >
-                    Choose other country
-                  </Button>
-                </div>
-                <ScrollArea className="h-48">
-                  <div className="space-y-3">
-                    {(state.showCountrySelector ? europeanCountries : europeanCountries.filter(country => 
-                      interestsByActivity[getActivityCategory(state.selectedActivity.type)]?.some(rec => 
-                        rec.name === country.name
-                      )
-                    )).map((country) => (
+
+            {/* 国家选择列表：只在选完兴趣后显示，并且只显示推荐国家 */}
+            {state.selectedActivity && Array.isArray(state.interests) && state.interests.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-sm font-medium mb-2">Recommended Countries</h3>
+                <div className="space-y-2">
+                  {interestsByActivity[state.selectedActivity.type]
+                    ?.filter(interest => state.interests.includes(interest.name))
+                    .flatMap(interest => interest.countries)
+                    .map((country) => (
                       <div
-                        key={country.id}
-                        className={`p-3 rounded-md cursor-pointer flex items-center justify-between ${
-                          state.selectedCountry?.id === country.id ? 'bg-travel-teal/20' : 'hover:bg-muted'
+                        key={country.name}
+                        className={`p-3 rounded-md cursor-pointer ${
+                          state.selectedCountry?.name === country.name ? 'bg-travel-teal/20' : 'hover:bg-muted'
                         }`}
-                        onClick={() => handleCountrySelect(country)}
+                        onClick={() => handleCountrySelect({
+                          id: country.name,
+                          name: country.name,
+                          location: {
+                            latitude: country.coordinates[1],
+                            longitude: country.coordinates[0]
+                          },
+                          description: country.description,
+                          capital: '',
+                          imageUrl: country.imageUrl,
+                          recommendedDays: 0,
+                          popularActivities: []
+                        })}
                       >
-                        <div>
-                          <h4 className="font-medium">{country.name}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {country.description}
-                          </p>
-                          </div>
-                        <div className="flex items-center justify-center w-6 h-6 border rounded">
-                          {state.selectedCountry?.id === country.id && '✓'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                </ScrollArea>
+                        <h4 className="font-medium">{country.name}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {country.description}
+                        </p>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Right Panel - AI Assistant */}
-      <Card className="lg:col-span-3">
-        <CardHeader>
-          <CardTitle>Customize your route with AI</CardTitle>
-          <CardDescription>
-            Get personalized recommendations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Button variant="outline" className="w-full justify-start">
-              5 days in {state.selectedCountry?.name || 'selected country'}
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              {state.selectedActivity?.type === 'food' ? 'Local Food Tour' :
-               state.selectedActivity?.type === 'culture' ? 'Historical Walking Tour' :
-               state.selectedActivity?.type === 'nature' ? 'Nature Trail' :
-               state.selectedActivity?.type === 'shopping' ? 'Shopping Route' :
-               state.selectedActivity?.type === 'nightlife' ? 'Nightlife Tour' :
-               'Custom Route'}
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              Local recommendations
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              Cultural experience
-            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 中间地图面板 */}
+      <div className="col-span-3 h-full">
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Select Destination</CardTitle>
+            <CardDescription>Select the country you want to visit on the map</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[calc(100%-8rem)]">
+            <div className="h-full">
+              <LoadScript 
+                googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                libraries={libraries}
+                onLoad={() => {
+                  console.log('Google Maps API loaded');
+                  setMapLoaded(true);
+                }}
+                onError={(error) => console.error('Error loading Google Maps API:', error)}
+              >
+                <div style={{ height: '100%', width: '100%', position: 'relative' }}>
+                  {!mapLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                    </div>
+                  )}
+                  {mapLoaded && (
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={
+                        state.selectedCountry
+                          ? {
+                              lat: state.selectedCountry.location.latitude,
+                              lng: state.selectedCountry.location.longitude
+                            }
+                          : defaultCenter
+                      }
+                      zoom={state.selectedCountry ? 12 : 4}
+                      onLoad={onMapLoad}
+                      options={defaultOptions}
+                    >
+                      {state.landmarks
+                        .filter(l =>
+                          l.source === 'google_places' &&
+                          l.id &&
+                          l.location &&
+                          typeof l.location.latitude === 'number' &&
+                          !isNaN(l.location.latitude) &&
+                          typeof l.location.longitude === 'number' &&
+                          !isNaN(l.location.longitude)
+                        )
+                        .slice(0, 5)
+                        .map((landmark, index) => (
+                          <Marker
+                            key={landmark.id || index}
+                            position={{
+                              lat: landmark.location.latitude,
+                              lng: landmark.location.longitude
+                            }}
+                            onClick={() => handleLandmarkSelect(landmark)}
+                            icon={{
+                              url: state.selectedLandmark?.id === landmark.id 
+                                ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                                : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                              scaledSize: new google.maps.Size(32, 32)
+                            }}
+                          />
+                        ))}
+                      {state.selectedLandmark && (
+                        <InfoWindow
+                          position={{
+                            lat: state.selectedLandmark.location.latitude,
+                            lng: state.selectedLandmark.location.longitude
+                          }}
+                          onCloseClick={() => handleLandmarkSelect(null)}
+                        >
+                          <div style={{ padding: '8px', minWidth: 220, position: 'relative' }}>
+                            <button
+                              style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer' }}
+                              title="Add to itinerary"
+                              onClick={() => handleAddToItinerary(state.selectedLandmark)}
+                            >
+                              <Plus size={20} color={selectedLandmarks.find(item => item.id === state.selectedLandmark.id) ? '#22c55e' : '#888'} />
+                            </button>
+                            <h3 style={{ margin: '0 0 8px 0', fontWeight: 600 }}>{state.selectedLandmark.name}</h3>
+                            {state.selectedLandmark.description && (
+                              <p style={{ margin: '0 0 4px 0' }}>{state.selectedLandmark.description}</p>
+                            )}
+                            {state.selectedLandmark.rating && (
+                              <p style={{ margin: '0 0 4px 0' }}>
+                                Rating: {state.selectedLandmark.rating}
+                                {state.selectedLandmark.user_ratings_total ? `（${state.selectedLandmark.user_ratings_total} reviews）` : ''}
+                              </p>
+                            )}
+                            {state.selectedLandmark.website && (
+                              <a
+                                href={state.selectedLandmark.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#007bff', textDecoration: 'underline', display: 'block', marginBottom: 4 }}
+                              >
+                                Website
+                              </a>
+                            )}
+                            {state.selectedLandmark.imageUrl && (
+                              <img
+                                src={state.selectedLandmark.imageUrl}
+                                alt={state.selectedLandmark.name}
+                                style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 6, marginTop: 6 }}
+                              />
+                            )}
+                            {state.selectedLandmark.opening_hours && state.selectedLandmark.opening_hours.open_now && (
+                              <div style={{ marginTop: 8 }}>
+                                <strong>Opening Hours:</strong>
+                                <ul style={{ paddingLeft: 16, margin: 0 }}>
+                                  {state.selectedLandmark.opening_hours.weekday_text?.map((line, idx) => (
+                                    <li key={idx} style={{ fontSize: 12 }}>{line}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </InfoWindow>
+                      )}
+                    </GoogleMap>
+                  )}
+                </div>
+              </LoadScript>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 加载状态 */}
+      {state.loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg">
+            <p>Loading...</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* 页面右上角行程icon和数量 */}
+      <div style={{ position: 'fixed', top: 24, right: 32, zIndex: 1000 }}>
+        <button
+          style={{ background: 'white', border: '1px solid #eee', borderRadius: 24, padding: '8px 16px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer' }}
+          onClick={() => setShowItinerary(true)}
+          title="View itinerary list"
+        >
+          <Map size={22} color="#0ea5e9" />
+          <span style={{ marginLeft: 8, fontWeight: 600, color: '#0ea5e9' }}>{selectedLandmarks.length}</span>
+        </button>
+      </div>
+
+      {/* 行程清单弹窗 */}
+      {showItinerary && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowItinerary(false)}>
+          <div style={{ background: 'white', borderRadius: 12, minWidth: 320, maxWidth: 400, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.15)', padding: 24, position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Itinerary List</h3>
+            {selectedLandmarks.length === 0 ? (
+              <p style={{ color: '#888', textAlign: 'center' }}>No items in itinerary</p>
+            ) : (
+              <div>
+                {Object.entries(
+                  selectedLandmarks.reduce((acc, item) => {
+                    const country = item.country || 'Unknown';
+                    if (!acc[country]) {
+                      acc[country] = [];
+                    }
+                    acc[country].push(item);
+                    return acc;
+                  }, {} as Record<string, typeof selectedLandmarks>)
+                ).map(([country, landmarks]) => (
+                  <div key={country} style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#666', marginBottom: 8, paddingBottom: 4, borderBottom: '1px solid #eee' }}>
+                      {country}
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {landmarks.map(item => (
+                        <li key={item.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 500 }}>{item.name}</div>
+                          </div>
+                          <button
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 8 }}
+                            title="Delete"
+                            onClick={() => handleRemoveFromItinerary(item.id)}
+                          >
+                            <Trash2 size={18} color="#ef4444" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#888' }}
+              onClick={() => setShowItinerary(false)}
+              title="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showChatbot && (
+        <Chatbot
+          onClose={() => setShowChatbot(false)}
+          onRecommendCountries={handleAIRecommendCountries}
+        />
+      )}
     </div>
   );
 };
+
+// 添加样式
+const styles = `
+  .marker-content {
+    position: relative;
+  }
+  .marker-icon {
+    font-size: 24px;
+    cursor: pointer;
+  }
+  .marker-icon.selected {
+    color: red;
+  }
+`;
+
+// 添加样式到文档
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default ActivityPlanner;

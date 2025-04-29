@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Compass, User, Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <Compass className="h-6 w-6 text-sky-500 transform rotate-12 hover:rotate-0 transition-transform duration-300" />
           <span className="text-xl font-bold bg-gradient-to-r from-sky-500 to-sky-700 bg-clip-text text-transparent [font-family:'Virgil',system-ui] hover:scale-105 transition-transform">
-            Wanderlust Whisperer
+            Airoam
           </span>
         </div>
         
