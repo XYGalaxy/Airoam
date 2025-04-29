@@ -103,10 +103,12 @@ npm install
 
 3. replace in `.env` file in the root directory with the following variables:
 ```
-VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key
+VITE_GOOGLE_MAPS_API_KEY=your_google_places_api_key#1
+VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key#2
 VITE_OPENAI_API_KEY=your_openai_api_key
 PORT=3000
 ```
+Note that it is better to use 2 different keys. The most important Google maps APIs for both are: Maps JavaScript API, Directions API, Places API, Geocoding API.
 
 4. Start the development server:
 ```bash
