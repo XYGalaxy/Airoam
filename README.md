@@ -30,7 +30,7 @@ Airoam is a modern web application that helps users plan their trips with AI-pow
 |                  |     |                   |     |                  |
 |  State Management|     |  Business Logic   |     |  OpenAI API      |
 |  - React Query   |     |  - AI Processing  |     |  - GPT Models    |
-|  - Context       |     |  - Data Processing|     |  - Embeddings   |
+|  - Context       |     |  - Data Processing|     |  - Embeddings    |
 |  - Local Storage |     |                   |     |                  |
 |                  |     |                   |     |                  |
 +------------------+     +-------------------+     +------------------+
@@ -101,7 +101,7 @@ cd travel-planner
 npm install
 ```
 
-3. Create a `.env` file in the root directory with the following variables:
+3. replace in `.env` file in the root directory with the following variables:
 ```
 VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key
 VITE_OPENAI_API_KEY=your_openai_api_key
@@ -118,7 +118,7 @@ npm run dev
 npm run server
 ```
 
-## Who can benefit from your app?
+## Who can benefit from Airoam?
 - Travel enthusiasts looking for personalized trip planning
 - Tourists seeking detailed information about destinations
 - Travel agencies needing a modern planning tool
@@ -140,8 +140,8 @@ travel-planner/
 └── server.js          # Express backend server
 ```
 
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Project Video
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Team Members
+Josie Zhang (@Josie0316), Zhen Qi (@zqi4869), Xinyue Gao (@XYGalaxy)
