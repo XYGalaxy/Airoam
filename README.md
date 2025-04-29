@@ -5,35 +5,35 @@ Airoam is a modern web application that helps users plan their trips with AI-pow
 
 ## Architecture
 ```ascii
-+------------------+     +------------------+     +------------------+
-|                  |     |                  |     |                  |
-|  Frontend        |     |  Backend         |     |  External APIs   |
-|  (React + TS)    |     |  (Express.js)    |     |                  |
-|                  |     |                  |     |                  |
-+------------------+     +------------------+     +------------------+
++------------------+     +-------------------+     +------------------+
+|                  |     |                   |     |                  |
+|  Frontend        |     |  Backend          |     |  External APIs   |
+|  (React + TS)    |     |  (Express.js)     |     |                  |
+|                  |     |                   |     |                  |
++------------------+     +-------------------+     +------------------+
         |                        |                        |
         |                        |                        |
         v                        v                        v
-+------------------+     +------------------+     +------------------+
-|                  |     |                  |     |                  |
-|  User Interface  |     |  API Gateway     |     |  Google Places   |
-|  - Maps          |     |  - Auth          |     |  - Places API    |
-|  - Search        |     |  - Routes        |     |  - Maps API      |
-|  - Itinerary     |     |  - Middleware    |     |                  |
-|  - Photos        |     |                  |     |                  |
-|                  |     |                  |     |                  |
-+------------------+     +------------------+     +------------------+
++------------------+     +-------------------+     +------------------+
+|                  |     |                   |     |                  |
+|  User Interface  |     |  API Gateway      |     |  Google Places   |
+|  - Maps          |     |  - Auth           |     |  - Places API    |
+|  - Search        |     |  - Routes         |     |  - Maps API      |
+|  - Itinerary     |     |  - Middleware     |     |                  |
+|  - Photos        |     |                   |     |                  |
+|                  |     |                   |     |                  |
++------------------+     +-------------------+     +------------------+
         |                        |                        |
         |                        |                        |
         v                        v                        v
-+------------------+     +------------------+     +------------------+
-|                  |     |                  |     |                  |
-|  State Management|     |  Business Logic  |     |  OpenAI API      |
-|  - React Query   |     |  - AI Processing |     |  - GPT Models    |
++------------------+     +-------------------+     +------------------+
+|                  |     |                   |     |                  |
+|  State Management|     |  Business Logic   |     |  OpenAI API      |
+|  - React Query   |     |  - AI Processing  |     |  - GPT Models    |
 |  - Context       |     |  - Data Processing|     |  - Embeddings   |
-|  - Local Storage |     |                  |     |                  |
-|                  |     |                  |     |                  |
-+------------------+     +------------------+     +------------------+
+|  - Local Storage |     |                   |     |                  |
+|                  |     |                   |     |                  |
++------------------+     +-------------------+     +------------------+
 ```
 
 
